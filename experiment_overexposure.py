@@ -13,7 +13,13 @@ import matplotlib.pyplot as plt
 import itertools
 #import pygraphviz as pgv
 from itertools import combinations
+import time
+import copy
 #from IPython.display import Image
+#from mat4py import savemat
+import csv
+
+
 
 # In[31]:
 
@@ -257,29 +263,99 @@ G_third.node[15]['criticality'] = .4
 G_third.node[16]['criticality'] = .4
 G_third.node[17]['criticality'] = .4
 
+
 G_DP = nx.Graph()
 
-G_DP.add_edge(1,3,weight=6)
+G_DP.add_edge(1,7,weight=6)
 G_DP.add_edge(1,2,weight=8)
-G_DP.add_edge(3,9,weight=10)
-G_DP.add_edge(3,8,weight=2)
-G_DP.add_edge(3,7,weight=5)
-G_DP.add_edge(3,6, weight=4)
+G_DP.add_edge(7,8,weight=10)
+G_DP.add_edge(7,11,weight=2)
+G_DP.add_edge(15,16,weight=5)
+G_DP.add_edge(3,4, weight=4)
 G_DP.add_edge(2,5, weight=3)
-G_DP.add_edge(2,4, weight=6)
+G_DP.add_edge(2,3, weight=7)
+G_DP.add_edge(7,15, weight=4)
+G_DP.add_edge(5,6, weight=7)
+G_DP.add_edge(7,13, weight=5)
+G_DP.add_edge(13,14, weight=8)
+G_DP.add_edge(11,12, weight=3)
+G_DP.add_edge(8,10, weight=4)
+G_DP.add_edge(8,9, weight=6)
 G_DP.node[1]['weight'] = 10
 G_DP.node[2]['weight']=12
-G_DP.node[3]['weight']=12
-G_DP.node[4]['weight']=5
+G_DP.node[3]['weight']=5
+G_DP.node[4]['weight']=8
 G_DP.node[5]['weight']=4
-G_DP.node[6]['weight']=7
-G_DP.node[7]['weight']=6
-G_DP.node[8]['weight']=5
-G_DP.node[9]['weight']=2
+G_DP.node[6]['weight']=12
+G_DP.node[7]['weight']=12
+G_DP.node[8]['weight']=8
+G_DP.node[9]['weight']=7
+G_DP.node[10]['weight']=10
+G_DP.node[11]['weight']=5
+G_DP.node[12]['weight']=8
+G_DP.node[13]['weight']=6
+G_DP.node[14]['weight']=6
+G_DP.node[15]['weight']=7
+G_DP.node[16]['weight']=9
+
+G_DP2 = nx.Graph()
+
+G_DP2.add_edge(0,2,weight=7)
+G_DP2.add_edge(0,1,weight=4)
+G_DP2.add_edge(1,4,weight=5)
+G_DP2.add_edge(1,3,weight=9)
+G_DP2.add_edge(0,5,weight=7)
+
+G_DP2.node[0]['weight'] = 15
+G_DP2.node[1]['weight']=3
+G_DP2.node[2]['weight']=7
+G_DP2.node[3]['weight']=3
+G_DP2.node[4]['weight']=14
+G_DP2.node[5]['weight']=2
 
 
 #A = nx.nx_agraph.to_agraph(G_paper)
 #A.layout(prog='dot')
+
+
+G_test_rand = nx.fast_gnp_random_graph(2000,0.4)
+def setClusterGraphAttributes(G, n):
+    for i in range(0,n):
+        rand = random.randint(1,15)
+        rand *= 10000
+        G.node[i]['weight'] = rand
+        for neighbor in nx.neighbors(G, i):
+            rand2 = random.randint(0,10)*10000
+            G.add_edge(i, neighbor, weight=rand2)
+
+def makeMatrix(G, n):
+    f = open("make_matrix.txt", "w+")
+    matrix = [[0] * n for _ in range(n)] #store payoff
+    weight = nx.get_node_attributes(G_test_DP, name='weight')
+    print("weight of nodes is:", weight)
+    edge = nx.get_edge_attributes(G_test_DP, 'weight')
+    print("weight of edges is:", edge)
+    for key, value in edge.items():
+        matrix[key[0]][key[1]] = value
+        matrix[key[1]][key[0]] = value
+    for key, value in weight.items():
+        matrix[key][key] = value
+    for i in range(n):
+        fullStr = ','.join([str(elem) for elem in matrix[i] ])
+        print(fullStr)
+        f.write("[" + fullStr + "]" + "\n")
+    f.close()
+    with open('make_matrix.csv', mode='w', newline='') as make_matrix:
+        matrix_writer = csv.writer(make_matrix, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for i in range(n):
+            matrix_writer.writerow(matrix[i])
+
+
+
+
+setClusterGraphAttributes(G_test_rand, 2000)
+
+
 
 
 # ### Set note attributes
@@ -504,10 +580,12 @@ def returnEntireSeedSet(G, threshold, k, thirdAlgorithm=False):
             seedSet.append( (nodeID, summedNeighbors))
             clusterCount += 1
     seedSet.sort(key=itemgetter(1))
+    print(seedSet)
     return seedSet
 # #### Misc helper method for algorithms (1) and (2)
 
 # In[44]:
+
 
 def greedy1(G, seedSet, phi, k):
     #Method that uses Dynamic Programming to find the optimal k nodes, using a greedy approach
@@ -653,7 +731,8 @@ def payoffOfUniqueSubsets(G, appeal):
     
     bestSubsetPayoff = ARBITRARY_NEG_NUMBER
     bestSubset = []
-        
+    print(rejectingNodeDict)
+    print(clusterDict)
     for rejectingNode, clusteredSet in rejectingNodeDict.items():
        
         for i in range(1, len(clusteredSet)+1):
@@ -743,12 +822,14 @@ def bfs(G, source, phi):
 # In[50]:
 
 def computeNegPayoff(G, nodeNum):
+    print("node is:" , nodeNum)
     nodeWeight = G.node[nodeNum]['weight']
     negPayoff = nx.neighbors(G, nodeNum)
     for negNode in negPayoff:
-        add = G_DP.get_edge_data(nodeNum, negNode)
+        add = G.get_edge_data(nodeNum, negNode)
         add = add['weight']
         nodeWeight -= add
+    print("node weight is:", nodeWeight)
     return nodeWeight
 
 
@@ -758,67 +839,135 @@ def tryDP(G, i, k):
     #k = number of seeds
     storePayoff = [[0] * i for _ in range(k)] #store payoff
     storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
+    tree = nx.bfs_tree(G, 0)
+    #print(nodes)
+    for numSeeds in range(0,k): #bottom up DP
+        nodes = list(reversed(list((nx.topological_sort(tree))))) #look at nodes in reverse topological order
+        for node, j in zip(nodes, range(0,i)): 
+            if j == 0 and numSeeds == 0: #first entry
+                #breakpoint()
+                storeSeeds[numSeeds][j] = [node]
+                nodeWeight = computeNegPayoff(G, node)
+                print(nodeWeight)
+                storePayoff[numSeeds][j] = nodeWeight
+                #print("first entry,", storePayoff)
 
-    for numSeeds in range(1,k+1): #bottom up DP
-        for nodeNum in range(1, i+1):
-            if nodeNum == 1 and numSeeds == 1: #first entry
-                storeSeeds[numSeeds-1][nodeNum-1] = [nodeNum]
+            elif numSeeds == 0: #if there is only one seed to consider, aka first row
+                last = storePayoff[numSeeds][j-1]
+                nodeWeight = computeNegPayoff(G, node)
+                if nodeWeight >= last:
+                    storePayoff[numSeeds][j]=nodeWeight
+                    storeSeeds[numSeeds][j] = [node]
+                else:
+                    storePayoff[numSeeds][j]= last
+                    table = storeSeeds[numSeeds][j-1]
+                    table2 = table[:]
+                    storeSeeds[numSeeds][j] = table2
+                #print("num seeds 0",storePayoff)
+            elif j == 0: #we only consider first node, so its simple
+                storePayoff[numSeeds][j] = storePayoff[numSeeds - 1][j]
+                storeSeeds[numSeeds][j] = storeSeeds[numSeeds - 1][j][:]
+            else: #where DP comes in
+                last = storePayoff[numSeeds-1][j-1] #diagonal-up entry
+                nextGuess = computeNegPayoff(G, node) + last
+                for lastNodes in storeSeeds[numSeeds-1][j-1]: #dont want to double count edges!
+                    neighbors = nx.neighbors(G, lastNodes)
+                    for neighbor in neighbors:
+                        if neighbor == node:
+                            add = G.get_edge_data(lastNodes, node) #neighbor of new node is current node
+                            add = add['weight']
+                            nextGuess += add
+                lastEntry = storePayoff[numSeeds][j-1] #left entry
+                lastEntryUp = storePayoff[numSeeds-1][j]
+                storePayoff[numSeeds][j] = max(lastEntry, lastEntryUp, nextGuess, last)
+                if storePayoff[numSeeds][j] == last:
+                    nextList = storeSeeds[numSeeds-1][j-1][:]
+                    storeSeeds[numSeeds][j] = nextList
+                elif storePayoff[numSeeds][j] == lastEntry+1:
+                    nextList = storeSeeds[numSeeds][j-1][:]
+                    storeSeeds[numSeeds][j] = nextList
+                    storePayoff[numSeeds][j] -= 1
+                elif storePayoff[numSeeds-1][j] == lastEntryUp+1:
+                    nextList = storeSeeds[numSeeds-1][j][:]
+                    storeSeeds[numSeeds][j] = nextList
+                    storePayoff[numSeeds][j] -= 1
+                else:
+                    #print("new is better")
+                    table = storeSeeds[numSeeds-1][j-1][:]
+                    table.append(node)
+                    storeSeeds[numSeeds][j] = table
+    print(storePayoff)
+    print(storeSeeds)
+    maxVal = storePayoff[k-1][i-1]
+    for j in range(0,k):
+        if storePayoff[j][i-1] > maxVal:
+            maxVal = storePayoff[j][i-1]
+    return (maxVal, storeSeeds[j][i-1])
+
+def tryDP2(G, i, k):
+    #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
+    #i = number_of_nodes(G)
+    #k = number of seeds
+    storePayoff = [[0] * i for _ in range(k)] #store payoff
+    storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
+
+    for numSeeds in range(0,k): #bottom up DP
+        for nodeNum in range(i):
+            if nodeNum == 0 and numSeeds == 0: #first entry
+                #breakpoint()
+                #print(nodeNum)
+                storeSeeds[numSeeds][nodeNum] = [nodeNum]
                 nodeWeight = computeNegPayoff(G, nodeNum)
-                storePayoff[numSeeds-1][nodeNum-1] = nodeWeight
-                print(storePayoff)
+                storePayoff[numSeeds][nodeNum] = nodeWeight
+                #print(storePayoff)
 
-            elif numSeeds == 1: #if there is only one seed to consider, aka first row
-                last = storePayoff[numSeeds-1][nodeNum-2]
+            elif numSeeds == 0: #if there is only one seed to consider, aka first row
+                #breakpoint()
+                last = storePayoff[numSeeds][nodeNum-1]
                 nodeWeight = computeNegPayoff(G, nodeNum)
                 #print("neg payoff is,", negPayoff)
                 if nodeWeight > last:
-                    print("current is better")
-                    storePayoff[numSeeds-1][nodeNum-1]=nodeWeight
-                    storeSeeds[numSeeds-1][nodeNum-1] = [nodeNum]
+                    #print("current is better")
+                    storePayoff[numSeeds][nodeNum]=nodeWeight
+                    storeSeeds[numSeeds][nodeNum] = [nodeNum]
                 else:
-                    storePayoff[numSeeds-1][nodeNum-1]= last
-                    table = storeSeeds[numSeeds-1][nodeNum-2]
+                    storePayoff[numSeeds][nodeNum]= last
+                    table = storeSeeds[numSeeds][nodeNum-1]
                     table2 = table[:]
-                    storeSeeds[numSeeds-1][nodeNum-1] = table2
-                print("one seed")
-                print(storePayoff)
-                print(storeSeeds)
-                
-            elif nodeNum == 1: #we only consider first node, so its simple
-                storePayoff[numSeeds - 1][nodeNum - 1] = storePayoff[numSeeds - 2][nodeNum-1]
-                storeSeeds[numSeeds - 1][nodeNum - 1] = storeSeeds[numSeeds - 2][nodeNum-1][:]
-                print("one node")
-                print(storePayoff)
-                print(storeSeeds)
+                    storeSeeds[numSeeds][nodeNum] = table2
+                #print(storePayoff)
+            elif nodeNum == 0: #we only consider first node, so its simple
+                #breakpoint()
+                storePayoff[numSeeds][nodeNum] = storePayoff[numSeeds - 1][nodeNum]
+                storeSeeds[numSeeds][nodeNum] = storeSeeds[numSeeds - 1][nodeNum][:]
+                #print(storePayoff)
+                #print(storeSeeds)
             else: #where DP comes in
-                last = storePayoff[numSeeds-2][nodeNum-2] #diagonal-up entry
-                print("last is: ", last)
+                #breakpoint()
+                last = storePayoff[numSeeds-1][nodeNum-1] #diagonal-up entry
                 nextGuess = computeNegPayoff(G, nodeNum) + last
-                print("diagonal up seed set is:" , storeSeeds[numSeeds-2][nodeNum-2])
-                for lastNodes in storeSeeds[numSeeds-2][nodeNum-2]: #dont want to double count edges!
+                for lastNodes in storeSeeds[numSeeds-1][nodeNum-1]: #dont want to double count edges!
                     neighbors = nx.neighbors(G, lastNodes)
+                    print(neighbors)
                     for nodes in neighbors:
                         if nodes == nodeNum:
-                            add = G_DP.get_edge_data(nodeNum, lastNodes)
+                            add = G.get_edge_data(nodeNum, lastNodes)
                             add = add['weight']
                             nextGuess += add
-                lastEntry = storePayoff[numSeeds-1][nodeNum-2]
-                print("last entry is:", lastEntry, "new entry is: ", nextGuess)
-                storePayoff[numSeeds-1][nodeNum-1] = max(lastEntry, nextGuess, last)
-                if storePayoff[numSeeds-1][nodeNum-1] == last:
-                    nextList = storeSeeds[numSeeds-2][nodeNum-2][:]
-                    storeSeeds[numSeeds-1][nodeNum-1] = nextList
-                elif storePayoff[numSeeds-1][nodeNum-1] == lastEntry:
-                    nextList = storeSeeds[numSeeds-1][nodeNum-2][:]
-                    storeSeeds[numSeeds-1][nodeNum-1] = nextList
+                lastEntry = storePayoff[numSeeds][nodeNum-1]
+                storePayoff[numSeeds][nodeNum] = max(lastEntry, nextGuess, last)
+                if storePayoff[numSeeds][nodeNum] == last:
+                    nextList = storeSeeds[numSeeds-1][nodeNum-1][:]
+                    storeSeeds[numSeeds][nodeNum] = nextList
+                elif storePayoff[numSeeds][nodeNum] == lastEntry:
+                    nextList = storeSeeds[numSeeds][nodeNum-1][:]
+                    storeSeeds[numSeeds][nodeNum] = nextList
                 else:
-                    print("new is better")
-                    table = storeSeeds[numSeeds-2][nodeNum-2][:]
+                    #print("new is better")
+                    table = storeSeeds[numSeeds-1][nodeNum-1][:]
                     table.append(nodeNum)
-                    storeSeeds[numSeeds-1][nodeNum-1] = table
-                print(storeSeeds)
-                print(storePayoff)
-    return storePayoff[k-1][i-1]
+                    storeSeeds[numSeeds][nodeNum] = table
+    return (storePayoff[k-1][i-1], storeSeeds[k-1][i-1])
     """
     #base case
     if i==1 or k == 1:
@@ -848,13 +997,55 @@ def tryDP(G, i, k):
     return storeSeeds[k-1][i-1]
     """
 
-i = G_DP.number_of_nodes()
-k=5
-print(i)
-payoff = tryDP(G_DP, i, k)
-print("payoff is: ", payoff)
-nx.draw_networkx(G_DP,pos=None, arrows=False, with_labels=True)
+
+
+def runDPWithTime(k):
+    for i in range(10,300, 50):
+        G = nx.random_tree(i)
+        nx.draw_networkx(G,pos=None, arrows=False, with_labels=True)
+        plt.show()
+        n = G.number_of_nodes()
+        start_time = time.time()
+        setClusterGraphAttributes(G, n)
+        weight = nx.get_node_attributes(G, name='weight')
+        edge = nx.get_edge_attributes(G, 'weight')
+        payoff = tryDP(G, n, k)
+        end_time = time.time()
+        matrix = makeMatrix(G, n)
+        print(matrix)
+        print("Payoff: ", payoff, "\n time taken:", end_time - start_time, "num nodes: ", i, "\n", weight, "\n", edge)
+
+#runDPWithTime(4)
+
+start_time = time.time()
+#l = topological_sort(G_test_DP)
+#print(l)
+G_test_DP = nx.random_tree(200)
+numNode = G_test_DP.number_of_nodes()
+weight1 = nx.get_node_attributes(G_DP2, name='weight')
+weight2 = nx.get_edge_attributes(G_DP2, name='weight')
+setClusterGraphAttributes(G_test_DP, numNode)
+makeMatrix(G_test_DP, numNode)
+
+print(weight1,weight2)
+#print(list(nx.bfs_edges(tree, 0)))
+
+#setClusterGraphAttributes(tree, numNode)
+test1 = tryDP(G_test_DP, numNode, 30)
+end_time = time.time()
+
+print("payoff test DP is: ", test1, end_time - start_time)
+
+nx.draw_networkx(G_test_DP,pos=None, arrows=False, with_labels=True)
 plt.show()
+"""
+#i = G_test_DP.number_of_nodes()
+test2 = runDPWithTime(G_test_rand, k)
+print("payoff is:", test2)
+test3 = runDPWithTime(G_DP2, k)
+print("payoff: ", test3)
+
+"""
 
 def drawGraph(G,appeal_threshold):
 
@@ -929,7 +1120,6 @@ def runTryDP(G, appeal, k):
 
 # In[64]:
 
-
 def driver(G, appeal, k):
     #runNaiveExperiment(G, appeal, k)
     runClusteredExperiment(G, appeal, k)
@@ -956,9 +1146,9 @@ def runDriver():
 
 threshold = .7
 k = 4
-driver(G_naiveFail, threshold, k)
-driver(G_paper, threshold, k)
-driver(G_third, threshold, k)
+#driver(G_naiveFail, threshold, k)
+#driver(G_paper, threshold, k)
+#driver(G_third, threshold, k)
 
 
 def updateGraph(G, appeal):
@@ -983,7 +1173,7 @@ def runCaveman():
         #updateGraph(G_caveman, threshold)
         j+=5
 
-runCaveman()
+#runCaveman()
 
 #test random partition graph
 
