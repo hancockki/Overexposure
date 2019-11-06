@@ -1,4 +1,5 @@
 import networkx as nx
+from networkx.algorithms import approximation as approx
 from operator import itemgetter
 import random
 import matplotlib.pyplot as plt
@@ -26,7 +27,7 @@ def createClusterGraph(n):
     G = nx.random_tree(200)
     for i in G.nodes():
         rand = random.randint(1,15)
-        G.node[i]['weight'] = rand
+        G.nodes[i]['weight'] = rand
         for neighbor in nx.neighbors(G, i):
             rand2 = random.randint(0,10)*10000
             G.add_edge(i, neighbor, weight=rand2)
@@ -37,14 +38,14 @@ def createClusterGraph(n):
 def setAllNodeAttributes(G):
     nodeList = G.nodes()
     for nodeID in nodeList:
-        G.node[nodeID]["visited"] = False
-        G.node[nodeID]['criticality'] = random.uniform(0, 1)
-        G.node[nodeID]["cluster"] = -1
+        G.nodes[nodeID]["visited"] = False
+        G.nodes[nodeID]['criticality'] = random.uniform(0, 1)
+        G.nodes[nodeID]["cluster"] = -1
 
 def setVisitedFalse(G):    
     nodeList = G.nodes()
     for nodeID in nodeList:
-        G.node[nodeID]["visited"] = False
+        G.nodes[nodeID]["visited"] = False
 
 def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
     
@@ -56,15 +57,19 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
     # We will only reach this method from another cluster - whereupon we call setVisitedFalse(), clearing the rejecting
     # nodes, allowing us to again "contain" this new cluster.
     
-    if G.node[source]['visited'] == False:
+    if G.nodes[source]['visited'] == False:
         setVisitedFalse(G)
-        G.node[source]['visited'] = True
+        G.nodes[source]['visited'] = True
     else:
         return 0
 
     queue = []
-    G.node[source]['cluster'] = clusterNumber
+    G.nodes[source]['cluster'] = clusterNumber
     queue.append(source)
+
+    #MTI: Added the following lines; without these lines, clusters are incomplete
+    clusterDict[clusterNumber] = set()
+    clusterDict[clusterNumber].add(source)
 
     acceptingInThisCluster = 1 #count yourself, you matter!
     rejecting = 0
@@ -72,18 +77,18 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
         start = queue.pop(0)
 
         for neighbor in nx.neighbors(G, start):
-            if G.node[neighbor]['visited'] == False: #check if we've added a node to a cluster yet
-                if G.node[neighbor]['criticality'] < appeal:
+            if G.nodes[neighbor]['visited'] == False: #check if we've added a node to a cluster yet
+                if G.nodes[neighbor]['criticality'] < appeal:
                     queue.append(neighbor)
-                    G.node[neighbor]['cluster'] = clusterNumber
-                    G.node[neighbor]["visited"] = True
+                    G.nodes[neighbor]['cluster'] = clusterNumber
+                    G.nodes[neighbor]['visited'] = True
                     acceptingInThisCluster += 1
                     
-                    if clusterNumber not in clusterDict:
-                        clusterDict[clusterNumber] = set()
-                        clusterDict[clusterNumber].add(neighbor)
-                    else:
-                        clusterDict[clusterNumber].add(neighbor)
+                    #if clusterNumber not in clusterDict:
+                    #    clusterDict[clusterNumber] = set()
+                    #    clusterDict[clusterNumber].add(neighbor)
+                    #else:
+                    clusterDict[clusterNumber].add(neighbor) #MTI: Only this line is sufficient. Commented out the previous 4 lines.
                     
                 else:
                     #acceptingInThisCluster -= 1
@@ -93,6 +98,14 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
                         rejectingNodeDict[clusterNumber].add(neighbor)
                     else:
                         rejectingNodeDict[clusterNumber].add(neighbor)
+                    
+                    G.nodes[neighbor]['visited'] = True #MTI: Added this line to avoid revisiting this node from other accepting nodes within this cluster.
+
+                    #####       MTI: COMMENTING OUT BFS FROM A REJECTING NODE. 
+                    ##### We want to account for shared boundaries of any two clusters only, not the rejected nodes connected to those boundaries.
+                    ##### This is because the rejecting nodes do not propagate the mesaage.
+                    ##### This may be useful in a modified model later on.
+                    '''
                     queueRej = []
                     visited = [neighbor]
                     queueRej.append(neighbor)
@@ -102,11 +115,12 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
                         currentNode = queueRej.pop()
                         neighbors = nx.neighbors(G, currentNode)
                         for node in neighbors:
-                            if G.node[node]['criticality'] >= appeal and node not in visited:
-                                G.node[node]['visited'] == True
+                            if G.nodes[node]['criticality'] >= appeal and node not in visited:
+                                G.nodes[node]['visited'] = True #MTI: Changed from == to =
                                 queueRej.append(node)
                                 rejectingNodeDict[clusterNumber].add(node)
                                 visited.append(node)
+                    '''
     return acceptingInThisCluster, rejecting, clusterNumber
 
 
@@ -125,7 +139,7 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
     G_cluster = nx.Graph()
     #Build the clusters
     for nodeID in nodeList:
-        if (G.node[nodeID]['criticality'] < threshold) and (G.node[nodeID]['cluster'] == -1):
+        if (G.nodes[nodeID]['criticality'] < threshold) and (G.nodes[nodeID]['cluster'] == -1):
             summedNeighbors = labelClusters(G, nodeID, clusterCount, threshold, thirdAlgorithm)
             #if summedNeighbors[0] > 0:
             seedSet.append((summedNeighbors[2], summedNeighbors[0], summedNeighbors[1]))
@@ -163,7 +177,7 @@ def makeMatrix(G, n):
 
 def computeNegPayoff(G, nodeNum):
     #print("node is:" , nodeNum)
-    nodeWeight = G.node[nodeNum]['weight']
+    nodeWeight = G.nodes[nodeNum]['weight']
     negPayoff = nx.neighbors(G, nodeNum)
     for negNode in negPayoff:
         add = G.get_edge_data(nodeNum, negNode)
@@ -388,7 +402,7 @@ def bfs(G, node, source):
 #we defined a new cluster and are adding a node to the cluster graph, whose weight is the number of accepting nodes in that cluster
 def make_Cluster_node(G, clusterNum, weight):
     G.add_node(clusterNum)
-    G.node[clusterNum]['weight'] = weight
+    G.nodes[clusterNum]['weight'] = weight
 
 #takes the rejecting node dictionary, which maps cluster number to rejecting nodes, and assigns a weight for each pair of clusters
 #that share rejecting nodes
@@ -401,15 +415,20 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
             else:
                 #intersection = [value for value in rejNodes if value in rejNodes2] #compute intersection
                 intersection = rejNodes.intersection(rejNodes2)
+
+                #####   MTI: COMMENTING OUT FOR NOW. SEE COMMENT IN labelClusters(.) FUNCTION.
                 #we have to confront the situation where there are many rejecting nodes appearing in a 'line' such that we never 
                 #reach the nodes in the middle of the line
+                '''
                 for node1 in rejNodes:
                     for node2 in rejNodes2:
                         if node1 in nx.neighbors(G_orig, node2):
                             intersection.add(node1)
                             intersection.add(node2)
+                '''
+
                 weight = len(intersection)
-                if weight > 0:
+                if weight > 0:  
                     G_cluster.add_edge(clusterNum, clusterNum2, weight=weight)
                     print("intersection between nodes ", clusterNum, clusterNum2, "is:", intersection, "of weight", weight)
 
@@ -445,8 +464,6 @@ def college_Message():
 #           k, number of clusters to seed
 def testOriginaltoCluster(n, c, k):
     G_test = nx.random_tree(n)
-    nx.draw_networkx(G_test, pos=None, arrows=False, with_labels=True)
-    plt.show()
     setAllNodeAttributes(G_test)
     G_cluster = buildClusteredSet(G_test, c)
     print("cluster dict:", clusterDict)
@@ -457,6 +474,18 @@ def testOriginaltoCluster(n, c, k):
     print("payoff subtree DP is:", maxval)
     clearVisitedNodesAndDictionaries(G_cluster)
     makeMatrix(G_cluster, G_cluster.number_of_nodes())
+
+    color_map = []
+    for nodeID in G_test.nodes():
+        if G_test.nodes[nodeID]['criticality'] >= c:
+            color_map.append('red')
+        else:
+            color_map.append('green')
+    fig2 = plt.figure(1)
+    nx.draw_networkx(G_test, node_color = color_map, pos=nx.spring_layout(G_test, iterations=1000), arrows=False, with_labels=True)
+    
+
+
     return G_cluster
 
 #clear dictionaries for next graph to test
@@ -469,11 +498,13 @@ def clearVisitedNodesAndDictionaries(G):
 
 #main function, used for calling things
 def main():
-    G = testOriginaltoCluster(100, 0.8, 3)
+    G = testOriginaltoCluster(20, 0.8, 3)
     #testRandomCluster()
     #G = college_Message()
 
-    nx.draw_networkx(G, pos=None, arrows=False, with_labels=True)
+    fig1 = plt.figure(2)
+    nx.draw_networkx(G, pos=nx.spring_layout(G, iterations=200), arrows=False, with_labels=True)
     plt.show()
 
-main()
+if __name__== "__main__":
+  main()
