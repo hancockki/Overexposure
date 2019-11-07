@@ -147,6 +147,17 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
             make_Cluster_node(G_cluster, clusterCount, summedNeighbors[0])
             clusterCount += 1
     #Choose up-to-k
+    
+    #MTI: Decrement the cluster weight by the number of rejecting nodes that are exclusive to a cluster
+    for clusterNum, rejNodes in rejectingNodeDict.items():
+        rejNodes_copy = rejNodes.copy()
+        for clusterNum2, rejNodes2 in rejectingNodeDict.items():
+            if clusterNum != clusterNum2:
+                rejNodes_copy = rejNodes_copy - rejNodes2
+        print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
+        G_cluster.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
+    
+
     make_cluster_edge(G_cluster, G, rejectingNodeDict)    
     return G_cluster
 
@@ -431,7 +442,16 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
                 if weight > 0:  
                     G_cluster.add_edge(clusterNum, clusterNum2, weight=weight)
                     print("intersection between nodes ", clusterNum, clusterNum2, "is:", intersection, "of weight", weight)
-
+    components = nx.algorithms.components.connected_components(G_cluster)
+    print("Connected components: ")
+    prev = -1
+    for comp in components:
+        print("Component: ", comp)
+        if prev == -1:
+            prev = list(comp)
+            continue
+        else:
+            G_cluster.add_edge(prev[0], list(comp)[0], weight=0)
 
 #Here, we read in the file from SNAP, and read it line by line. Each line is composed of the edges (u,v) as well as the 
 #time stamp for creating the graph
