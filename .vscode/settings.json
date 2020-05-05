@@ -1,3 +1,10 @@
 {
-    "python.pythonPath": "C:\\Users\\Owner\\.virtualenvs\\Overexposure-sOFGEqOn\\Scripts\\python.exe"
+    "python.pythonPath": "C:\\Python27\\Downloads\\python.exe",
+    "git.ignoreLimitWarning": true,
+    "python.testing.pytestArgs": [
+        "env"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true
 }
