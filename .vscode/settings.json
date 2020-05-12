@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "C:\\Python27\\Downloads\\python.exe",
+    "python.pythonPath": "C:\\Users\\Owner\\AppData\\Local\\Programs\\Python\\Python37\\python.exe",
     "git.ignoreLimitWarning": true,
     "python.testing.pytestArgs": [
         "env"

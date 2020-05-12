@@ -23,15 +23,15 @@ allSubsets = []
 # In[32]:
 
 #Set the attributes for the cluster graph which we generate randomly
-#input -- n, the number of nodes
+#input -- n, the number of clusters
 #return -- G, a random tree with n nodes
 def createClusterGraph(n):
-    G = nx.random_tree(200)
+    G = nx.random_tree(n)
     for i in G.nodes():
         rand = random.randint(1,15)
         G.nodes[i]['weight'] = rand
         for neighbor in nx.neighbors(G, i):
-            rand2 = random.randint(0,10)*10000
+            rand2 = random.randint(0,rand)
             G.add_edge(i, neighbor, weight=rand2)
     return G
 
@@ -152,6 +152,7 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
     
     #MTI: Decrement the cluster weight by the number of rejecting nodes that are exclusive to a cluster
     for clusterNum, rejNodes in rejectingNodeDict.items():
+        print("rejecting nodes,", clusterNum, rejNodes)
         rejNodes_copy = rejNodes.copy()
         for clusterNum2, rejNodes2 in rejectingNodeDict.items():
             if clusterNum != clusterNum2:
@@ -178,7 +179,6 @@ def makeMatrix(G, n):
         matrix[key][key] = value
     for i in range(n):
         fullStr = ','.join([str(elem) for elem in matrix[i] ])
-      #  print(fullStr)
         f.write("[" + fullStr + "]" + "\n")
     f.close()
     with open('make_matrix.csv', mode='w', newline='') as make_matrix:
@@ -189,7 +189,6 @@ def makeMatrix(G, n):
 
 
 def computeNegPayoff(G, nodeNum):
-    #print("node is:" , nodeNum)
     nodeWeight = G.nodes[nodeNum]['weight']
     negPayoff = nx.neighbors(G, nodeNum)
     for negNode in negPayoff:
@@ -200,14 +199,13 @@ def computeNegPayoff(G, nodeNum):
     return nodeWeight
 
 
-def tryDP(G, i, k):
+def DP(G, i, k):
     #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
     #i = number_of_nodes(G)
     #k = number of seeds
     storePayoff = [[0] * i for _ in range(k)] #store payoff
     storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
     tree = nx.bfs_tree(G, 1)
-    #print(nodes)
     for numSeeds in range(0,k): #bottom up DP
         nodes = list(reversed(list((nx.topological_sort(tree))))) #look at nodes in reverse topological order
         for node, j in zip(nodes, range(0,i)): 
@@ -215,7 +213,6 @@ def tryDP(G, i, k):
                 #breakpoint()
                 storeSeeds[numSeeds][j] = [node]
                 nodeWeight = computeNegPayoff(G, node)
-                #print(nodeWeight)
                 storePayoff[numSeeds][j] = nodeWeight
                 #print("first entry,", storePayoff)
 
@@ -263,8 +260,8 @@ def tryDP(G, i, k):
                     table = storeSeeds[numSeeds-1][j-1][:]
                     table.append(node)
                     storeSeeds[numSeeds][j] = table
-    print(storePayoff)
-    print(storeSeeds)
+    #print(storePayoff)
+    #print(storeSeeds)
     maxVal = storePayoff[k-1][i-1]
     for j in range(0,k):
         if storePayoff[j][i-1] > maxVal:
@@ -272,7 +269,7 @@ def tryDP(G, i, k):
     return (maxVal, storeSeeds[j][i-1])
 
 
-def computePayoff(G, i, k, source):
+def subsetDP(G, i, k, source):
     #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
     #i = number_of_nodes(G)
     #k = number of seeds
@@ -287,7 +284,6 @@ def computePayoff(G, i, k, source):
                 #breakpoint()
                 storeSeeds[numSeeds][j] = [node]
                 nodeWeight = computeNegPayoff(G, node)
-                #print(nodeWeight)
                 storePayoff[numSeeds][j] = nodeWeight
                 #print("first entry,", storePayoff)
 
@@ -354,12 +350,10 @@ def DP_Improved(G, k):
     #storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
     tree = nx.bfs_tree(G, 1)
     nodes = list((nx.topological_sort(tree))) #look at nodes in reverse topological order
-   # print(nodes)
    # print("root is", nodes[0])
     neighbors = nx.neighbors(G, nodes[0])
     subgraph_list = [] #store subgraph
     for node in neighbors: #we want to compute payoff for the subtree 
-        #print(node)
         subgraph = bfs(G, node, nodes[0])
         #print("subgraph:", subgraph)
         subgraph_list.append(subgraph)
@@ -382,7 +376,7 @@ def DP_Improved(G, k):
                     continue
                 else:
                     #print("num seeds is:", p[i])
-                    amountCur = computePayoff(G_sub, j, p[i], nodes[0]) #get payoff for j seeds in the subgraph
+                    amountCur = subsetDP(G_sub, j, p[i], nodes[0]) #get payoff for j seeds in the subgraph
                     amount += amountCur[0] #add payoff 
                     nodes_picked.append(amountCur[1])
                     storePart[i][p[i]] = amountCur[0]
@@ -485,7 +479,7 @@ def college_Message():
     G = buildClusteredSet(G_College_Msg, 0.7)
     #print("cluster dict:", clusterDict)
     #print("rej node dict", rejectingNodeDict)
-    test1 = tryDP(G, G.number_of_nodes(), 6)
+    test1 = DP(G, G.number_of_nodes(), 6)
     maxval = DP_Improved(G, 6)
     print("payoff test DP is: ", test1)
     print("payoff subtree DP is:", maxval)
@@ -532,9 +526,8 @@ def clearVisitedNodesAndDictionaries(G):
 
 #main function, used for calling things
 def main():
-    #G = testOriginaltoCluster(80, 0.8, 3)
-    #testRandomCluster()
-    G = college_Message()
+    G = testOriginaltoCluster(80, 0.8, 3)
+   # G = college_Message()
 
     fig1 = plt.figure(2)
     nx.draw_networkx(G, pos=nx.spring_layout(G, iterations=200), arrows=False, with_labels=True)
