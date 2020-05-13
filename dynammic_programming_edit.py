@@ -101,6 +101,18 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
                     else:
                         rejectingNodeDict[clusterNumber].add(neighbor)
                     
+                    #the below section accounts for "walls" of rejecting nodes
+                    rejecting_queue = []
+                    rejecting_queue.append(neighbor)
+                    while rejecting_queue:
+                        start = rejecting_queue.pop(0)
+                        for neighbor2 in nx.neighbors(G, start):
+                            if G.nodes[neighbor]['visited'] == False:
+                                if G.nodes[neighbor2]['criticality'] > appeal: #rejecting, so we need to consider this
+                                    rejecting_queue.append(neighbor2)
+                                    rejectingNodeDict[clusterNumber].add(neighbor2)
+                                    G.nodes[neighbor2]['visited'] = True
+
                     G.nodes[neighbor]['visited'] = True #MTI: Added this line to avoid revisiting this node from other accepting nodes within this cluster.
 
                     #####       MTI: COMMENTING OUT BFS FROM A REJECTING NODE. 
@@ -350,7 +362,7 @@ def DP_Improved(G, k):
     #storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
     tree = nx.bfs_tree(G, 1)
     nodes = list((nx.topological_sort(tree))) #look at nodes in reverse topological order
-   # print("root is", nodes[0])
+    print("root is", nodes[0])
     neighbors = nx.neighbors(G, nodes[0])
     subgraph_list = [] #store subgraph
     for node in neighbors: #we want to compute payoff for the subtree 
@@ -426,6 +438,7 @@ def make_Cluster_node(G, clusterNum, weight):
 #takes the rejecting node dictionary, which maps cluster number to rejecting nodes, and assigns a weight for each pair of clusters
 #that share rejecting nodes
 #input -- original graph, cluster graph, rejecting node dictionary
+
 def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
     for clusterNum, rejNodes in rejectingNodesDict.items():
         for clusterNum2, rejNodes2 in rejectingNodesDict.items():
@@ -457,9 +470,10 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
         print("Component: ", comp)
         if prev == -1:
             prev = list(comp)
+            print("list is", list(comp))
             continue
         else:
-            G_cluster.add_edge(prev[0], list(comp)[0], weight=0)
+            G_cluster.add_edge(prev[0], list(comp)[0], weight=0) #add arbitrary weight
 
 #Here, we read in the file from SNAP, and read it line by line. Each line is composed of the edges (u,v) as well as the 
 #time stamp for creating the graph
@@ -496,7 +510,7 @@ def testOriginaltoCluster(n, c, k):
     G_cluster = buildClusteredSet(G_test, c)
     print("cluster dict:", clusterDict)
     print("rej node dict", rejectingNodeDict)
-    test1 = tryDP(G_cluster, G_cluster.number_of_nodes(), k)
+    test1 = DP(G_cluster, G_cluster.number_of_nodes(), k)
     maxval = DP_Improved(G_cluster, k)
     print("payoff test DP is: ", test1)
     print("payoff subtree DP is:", maxval)
@@ -511,9 +525,6 @@ def testOriginaltoCluster(n, c, k):
             color_map.append('green')
     fig2 = plt.figure(1)
     nx.draw_networkx(G_test, node_color = color_map, pos=nx.spring_layout(G_test, iterations=1000), arrows=False, with_labels=True)
-    
-
-
     return G_cluster
 
 #clear dictionaries for next graph to test
@@ -522,11 +533,9 @@ def clearVisitedNodesAndDictionaries(G):
     rejectingNodeDict.clear()
     clusterDict.clear()
 
-
-
 #main function, used for calling things
 def main():
-    G = testOriginaltoCluster(80, 0.8, 3)
+    G = testOriginaltoCluster(20, 0.6, 3)
    # G = college_Message()
 
     fig1 = plt.figure(2)
