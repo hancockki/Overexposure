@@ -86,11 +86,7 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
                     G.nodes[neighbor]['visited'] = True
                     acceptingInThisCluster += 1
                     
-                    #if clusterNumber not in clusterDict:
-                    #    clusterDict[clusterNumber] = set()
-                    #    clusterDict[clusterNumber].add(neighbor)
-                    #else:
-                    clusterDict[clusterNumber].add(neighbor) #MTI: Only this line is sufficient. Commented out the previous 4 lines.
+                    clusterDict[clusterNumber].add(neighbor)
                     
                 else:
                     #acceptingInThisCluster -= 1
@@ -101,17 +97,19 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
                     else:
                         rejectingNodeDict[clusterNumber].add(neighbor)
                     
+                    """
                     #the below section accounts for "walls" of rejecting nodes
                     rejecting_queue = []
                     rejecting_queue.append(neighbor)
                     while rejecting_queue:
-                        start = rejecting_queue.pop(0)
-                        for neighbor2 in nx.neighbors(G, start):
-                            if G.nodes[neighbor]['visited'] == False:
+                        start2 = rejecting_queue.pop(0)
+                        for neighbor2 in nx.neighbors(G, start2):
+                            if G.nodes[neighbor2]['visited'] == False:
                                 if G.nodes[neighbor2]['criticality'] > appeal: #rejecting, so we need to consider this
                                     rejecting_queue.append(neighbor2)
                                     rejectingNodeDict[clusterNumber].add(neighbor2)
                                     G.nodes[neighbor2]['visited'] = True
+                """
 
                     G.nodes[neighbor]['visited'] = True #MTI: Added this line to avoid revisiting this node from other accepting nodes within this cluster.
 
@@ -178,7 +176,8 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
 
 
 def makeMatrix(G, n):
-    f = open("make_matrix.txt", "w+")
+    f = open("make_matrix.txt", "a")
+    f.write("\n Next test: \n")
     matrix = [[0] * n for _ in range(n)] #store payoff
     weight = nx.get_node_attributes(G, name='weight')
     #print("weight of nodes is:", weight)
@@ -446,7 +445,7 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
                 continue
             else:
                 #intersection = [value for value in rejNodes if value in rejNodes2] #compute intersection
-                intersection = rejNodes.intersection(rejNodes2)
+                intersection = rejNodes.union(rejNodes2)
 
                 #####   MTI: COMMENTING OUT FOR NOW. SEE COMMENT IN labelClusters(.) FUNCTION.
                 #we have to confront the situation where there are many rejecting nodes appearing in a 'line' such that we never 
@@ -510,6 +509,8 @@ def testOriginaltoCluster(n, c, k):
     G_cluster = buildClusteredSet(G_test, c)
     print("cluster dict:", clusterDict)
     print("rej node dict", rejectingNodeDict)
+    print(G_cluster.edges.data())
+    print(G_cluster.nodes.data())
     test1 = DP(G_cluster, G_cluster.number_of_nodes(), k)
     maxval = DP_Improved(G_cluster, k)
     print("payoff test DP is: ", test1)
@@ -527,6 +528,20 @@ def testOriginaltoCluster(n, c, k):
     nx.draw_networkx(G_test, node_color = color_map, pos=nx.spring_layout(G_test, iterations=1000), arrows=False, with_labels=True)
     return G_cluster
 
+def testCluster(G, k):
+    print(G.edges.data())
+    print(G.nodes.data())
+    test1 = DP(G, G.number_of_nodes(), k)
+    maxval = DP_Improved(G, k)
+    print("payoff test DP is: ", test1)
+    print("payoff subtree DP is:", maxval)
+    clearVisitedNodesAndDictionaries(G)
+    makeMatrix(G, G.number_of_nodes())
+
+    return G
+
+
+
 #clear dictionaries for next graph to test
 def clearVisitedNodesAndDictionaries(G):
     setVisitedFalse(G)
@@ -535,8 +550,10 @@ def clearVisitedNodesAndDictionaries(G):
 
 #main function, used for calling things
 def main():
-    G = testOriginaltoCluster(20, 0.6, 3)
+    #G = testOriginaltoCluster(15, 0.5, 3)
    # G = college_Message()
+    G = createClusterGraph(10)
+    testCluster(G, 3)
 
     fig1 = plt.figure(2)
     nx.draw_networkx(G, pos=nx.spring_layout(G, iterations=200), arrows=False, with_labels=True)
