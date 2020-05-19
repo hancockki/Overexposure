@@ -373,38 +373,72 @@ def DP_Improved(G, k):
         #print("subgraph:", subgraph)
         subgraph_list.append(subgraph)
     num_children = len(subgraph_list)
-    store_subtree_partition_payoff = [[0] * (k+1) for _ in range(num_children)] #memoization table 
-    part = partitions(k, num_children) #k seeds and num_children subtrees
-
+    store_subtree_partition = [[0] * (k+1) for _ in range(num_children)] #memoization table 
+    part_without_root = partitions(k, num_children) #k seeds and num_children subtrees
+    part_with_root = partitions(k-1, num_children) #if we pick the root node. recompute partitions with k-1 seeds
     storePayoffs = {}
-    for p in part: #get each partition of the seeds
-        total_payoff = 0
-        nodes_picked = []
-        print("Partition p is: ", p)
-        for i in range(num_children): #pick the correct number of seeds for each subgraph
-            G_sub = G.subgraph(subgraph_list[i]) #we make it a subgraph of G
-            nodes = list(G_sub)
-            j = G_sub.number_of_nodes() 
-            #print("nodes in subgraph:", j)
-            if p[i] != 0:
-                if store_subtree_partition_payoff[i][p[i]] != 0: #memoization, don't need to compute again. i is the subtree index, p[i] is the number of seeds
-                    total_payoff += store_subtree_partition_payoff[i][p[i]]
-                    continue
-                else:
-                    #print("num seeds is:", p[i])
-                    print("now doing DP starting from" , nodes[0])
-                    subtree_payoff, subtree_nodes_picked = subsetDP(G_sub, j, p[i], nodes[0]) #get payoff for j seeds in the subgraph
-                    total_payoff += subtree_payoff #add payoff 
-                    nodes_picked.append(subtree_nodes_picked)
-                    store_subtree_partition_payoff[i][p[i]] = subtree_payoff #store in table
 
+    for p in part_without_root: #get each partition of the seeds
+        total_payoff, nodes_picked = compute_subtree_payoff(G, subgraph_list, p, num_children, store_subtree_partition)
         storePayoffs[total_payoff] = nodes_picked, p
+
+    for p in part_with_root:
+        total_payoff, nodes_picked = compute_subtree_payoff(G, subgraph_list, p, num_children, store_subtree_partition)
+        #now, we have to consider the root, since we are seeding it.
+        nodeWeight = G.nodes[nodes[0]]['weight']
+        negPayoff = nx.neighbors(G, nodes[0])
+        for negNode in negPayoff:
+            #we can't just call the regular negPayoff function because we may have already picked the neighbor of the root and thus considered it's neg payoff
+            if negNode not in nodes_picked:
+                add = G.get_edge_data(nodes[0], negNode)
+                add = add['weight']
+                nodeWeight -= add
+
+        total_payoff += nodeWeight
+        nodes_picked.append(nodes[0]) #add root to nodes list
+        storePayoffs[total_payoff] = nodes_picked, p 
         #whether we need to save more information about all of the subtrees according to the way seeding happened --> joint information
 
-    maxval = max(storePayoffs) #get largest subset value
+    maxval = max(storePayoffs) #get largest subset value, out of all (with/without root)
     print("max val is:", maxval, "with seeds", storePayoffs[maxval])
     #print(storePayoffs)
     return maxval
+
+#Here, I just put all the code to compute the subtree payoff, since otherwise I would have to repeat all of this, for partitions with the root
+#and partitions without the root.
+# Arguments:
+#   G --> whole graph
+#   subgraph_list --> the list of subgraphs from the root node
+#   p --> the current partition we are considering
+#   num_children
+#   store_subtree_partition --> memoization table
+#   
+# Returns:
+#   total_payoff --> payoff from the current partition p 
+#   nodes_picked --> nodes picked from the current partition
+def compute_subtree_payoff(G, subgraph_list, p, num_children, store_subtree_partition):
+    total_payoff = 0
+    nodes_picked = []
+    print("Partition p is: ", p)
+    for i in range(num_children): #pick the correct number of seeds for each subgraph
+        G_sub = G.subgraph(subgraph_list[i]) #we make it a subgraph of G
+        nodes = list(G_sub)
+        j = G_sub.number_of_nodes() 
+        #print("nodes in subgraph:", j)
+        if p[i] != 0:
+            if store_subtree_partition[i][p[i]] != 0: #memoization, don't need to compute again. i is the subtree index, p[i] is the number of seeds
+                total_payoff += store_subtree_partition[i][p[i]][0]
+                nodes_picked.append(store_subtree_partition[i][p[i]][1])
+                continue
+            else:
+                #print("num seeds is:", p[i])
+                print("now doing DP starting from" , nodes[0])
+                subtree_payoff, subtree_nodes_picked = subsetDP(G_sub, j, p[i], nodes[0]) #get payoff for j seeds in the subgraph
+                total_payoff += subtree_payoff #add payoff 
+                nodes_picked.append(subtree_nodes_picked)
+                store_subtree_partition[i][p[i]] = [subtree_payoff, subtree_nodes_picked] #store in table
+    
+    return total_payoff, nodes_picked
 
 
 def partitions(n, k): #stars and bars, k subtrees and n seeds to allocate among them
