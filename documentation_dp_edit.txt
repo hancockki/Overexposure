@@ -102,6 +102,39 @@ testOriginaltoCluster --
     Tests how well we are converting the original graph to a cluster graph.
 
 
+CURRENT PROBLEM:
+How do we properly construct the cluster graph, when A) clusters may be separated by more than one node, and B) multiple clusters share the same rejecting nodes
+We also previously discussed C) the issue of triangularization
+
+I propose trying to implement a model where instead of the edges having numerical weights, the edges have vectors which are represented as a list of rejecting nodes.
+Then, when we seed a given cluster, we "check" off all those rejecting nodes, so when we choose a cluster with overlapping rejecting nodes,
+we know which ones to not count. 
+
+However, this bears another problem: we have to completely change our dynamic programming algorithm, which is based on numerical edge weights. How can we alter DP to account for this?
+    A) Try all possible combinations, perhaps some sort of backtracking algorithm. 
+    B) We have to consider only immediate neighbors in numRejecting, as if there is more than one rejecting node separating two clusters, the rejecting nodes in the "middle" 
+    will never be reached.
+
+My question now is:
+    What should we focus on? Restricting the problem and getting a working optimization algorithm, or trying to generalize the problem?
+
+
+Tree Case (original graph):
+    You start with a tree. Only scenario that leads to a complete cluster graph is when a lot of branches share a single rejecting node. Can we delete zeo weight
+    edge without any impact on optimal solution? Try to prove by contradiction for the tree case
+    The cluster graph is not necessarily a tree
+
+
+Tree Case (cluster graph):
+    Prove the complexity is NP-hard (analyze running time)
+    Prove that it gives an optimal solution
+    Maybe the bug is actually in the linear program
+    Show some smaller examples
+    Save them in a file --> append the code to save files uniquely
+
+
+
+
 
 
 
