@@ -254,23 +254,14 @@ def DP(G, i, k): #doesn't consider subtrees
                             nextGuess += add
                 lastEntry = storePayoff[numSeeds][j-1] #left entry
                 lastEntryUp = storePayoff[numSeeds-1][j]
-                storePayoff[numSeeds][j] = max(lastEntry, lastEntryUp, nextGuess, last)
-                if storePayoff[numSeeds][j] == last:
-                    nextList = storeSeeds[numSeeds-1][j-1][:]
-                    storeSeeds[numSeeds][j] = nextList
-                elif storePayoff[numSeeds][j] == lastEntry+1:
-                    nextList = storeSeeds[numSeeds][j-1][:]
-                    storeSeeds[numSeeds][j] = nextList
-                    storePayoff[numSeeds][j] -= 1
-                elif storePayoff[numSeeds-1][j] == lastEntryUp+1:
-                    nextList = storeSeeds[numSeeds-1][j][:]
-                    storeSeeds[numSeeds][j] = nextList
-                    storePayoff[numSeeds][j] -= 1
-                else:
-                    #print("new is better")
-                    table = storeSeeds[numSeeds-1][j-1][:]
-                    table.append(nodes[j])
-                    storeSeeds[numSeeds][j] = table
+                tup = [(storeSeeds[numSeeds][j-1], lastEntry), (storeSeeds[numSeeds-1][j], lastEntryUp), (storeSeeds[numSeeds-1][j-1], nextGuess), (storeSeeds[numSeeds-1][j-1], last)]
+                tup.sort(key = lambda x: x[1])
+                nextList = tup[-1][0][:]
+                storeSeeds[numSeeds][j] = nextList
+                storePayoff[numSeeds][j] = tup[-1][1]
+                if tup[-1][0] == storeSeeds[numSeeds-1][j-1]:
+                    print("reached this")
+                    storeSeeds[numSeeds][j].append(nodes[j])
     f = open("make_matrix.txt", "a")
     f.write("\n  regular DP payoff: " + str(storePayoff))
     f.write("\n with seeds: " + str(storeSeeds))
@@ -281,18 +272,20 @@ def DP(G, i, k): #doesn't consider subtrees
     return (maxVal, storeSeeds[j][i-1])
 
 
-def subsetDP(G, i, k, source):
+def subsetDP(G, G_sub, i, k, source):
     #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
     #i = number_of_nodes(G)
     #k = number of seeds
-    storePayoff = [[0] * i for _ in range(k)] #store payoff
-    storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
-    tree = nx.bfs_tree(G, source)
+    
+    tree = nx.bfs_tree(G_sub, source)
     #print(tree)
+    nodes = list(reversed(list((nx.topological_sort(tree)))))
+    storePayoff = [[0] * i for _ in range(len(nodes))] #store payoff
+    storeSeeds = [[[]] * i for _ in range(len(nodes))] #store seeds at each stage
+    print("order is", nodes)
+    if k > len(nodes):
+        k = len(nodes)
     for numSeeds in range(0,k): #bottom up DP
-        nodes = list(reversed(list((nx.topological_sort(tree)))))
-        print("order is", nodes)
-        #for node, j in zip(G, range(0,i)): 
         for j in range(0,len(nodes)): #trying payoff for seeding numSeeds among j nodes
             if j == 0 and numSeeds == 0: #first entry, only consider seeding one seed in the first node
                 #breakpoint()
@@ -303,7 +296,7 @@ def subsetDP(G, i, k, source):
 
             elif numSeeds == 0: #if there is only one seed to consider, aka first row
                 last = storePayoff[numSeeds][j-1]
-                nodeWeight = computeNegPayoff(G, nodes[j])
+                nodeWeight = computeNegPayoff(G, nodes[j]) #compute payoff for current node
                 if nodeWeight >= last:
                     storePayoff[numSeeds][j]=nodeWeight
                     storeSeeds[numSeeds][j] = [nodes[j]]
@@ -326,25 +319,17 @@ def subsetDP(G, i, k, source):
                             add = G.get_edge_data(lastNodes, nodes[j]) #neighbor of new node is current node
                             add = add['weight']
                             nextGuess += add
+
                 lastEntry = storePayoff[numSeeds][j-1] #left entry
-                lastEntryUp = storePayoff[numSeeds-1][j]
-                storePayoff[numSeeds][j] = max(lastEntry, lastEntryUp, nextGuess, last)
-                if storePayoff[numSeeds][j] == last:
-                    nextList = storeSeeds[numSeeds-1][j-1][:]
-                    storeSeeds[numSeeds][j] = nextList
-                elif storePayoff[numSeeds][j] == lastEntry+1:
-                    nextList = storeSeeds[numSeeds][j-1][:]
-                    storeSeeds[numSeeds][j] = nextList
-                    storePayoff[numSeeds][j] -= 1
-                elif storePayoff[numSeeds-1][j] == lastEntryUp+1:
-                    nextList = storeSeeds[numSeeds-1][j][:]
-                    storeSeeds[numSeeds][j] = nextList
-                    storePayoff[numSeeds][j] -= 1
-                else:
-                    #print("new is better")
-                    table = storeSeeds[numSeeds-1][j-1][:]
-                    table.append(nodes[j])
-                    storeSeeds[numSeeds][j] = table
+                lastEntryUp = storePayoff[numSeeds-1][j] #above entry
+                tup = [(storeSeeds[numSeeds][j-1], lastEntry), (storeSeeds[numSeeds-1][j], lastEntryUp), (storeSeeds[numSeeds-1][j-1], nextGuess), (storeSeeds[numSeeds-1][j-1], last)]
+                tup.sort(key = lambda x: x[1])
+                nextList = tup[-1][0][:]
+                storeSeeds[numSeeds][j] = nextList
+                storePayoff[numSeeds][j] = tup[-1][1]
+                if tup[-1][0] == storeSeeds[numSeeds-1][j-1]:
+                    storeSeeds[numSeeds][j].append(nodes[j])
+                print(" \n lastEntry: ", lastEntry, " lastEntryUp: ", lastEntryUp, "nextGuess: ", nextGuess, "last: " , last)
         print(storePayoff)
         print(storeSeeds)
     maxVal = storePayoff[k-1][i-1]
@@ -406,12 +391,13 @@ def DP_Improved(G, k):
                 else:
                     #print("num seeds is:", p[i])
                     print("now doing DP starting from" , nodes[0], j, p[i])
-                    subtree_payoff, subtree_nodes_picked = subsetDP(G_sub, j, p[i], nodes[0]) #get payoff for j seeds in the subgraph
+                    subtree_payoff, subtree_nodes_picked = subsetDP(G, G_sub, j, p[i], nodes[0]) #get payoff for j seeds in the subgraph
                     total_payoff += subtree_payoff #add payoff 
                     for k in subtree_nodes_picked:
                         nodes_picked.append(k)
                     print("nodes picked so far", nodes_picked, i)
                     store_subtree_partition[i][p[i]] = [subtree_payoff, subtree_nodes_picked] #store in table
+        print("Payoffs so far: ", storePayoffs)
         storePayoffs[total_payoff] = nodes_picked, p 
 
     maxval = max(storePayoffs) #get largest subset value, out of all (with/without root)
@@ -420,7 +406,7 @@ def DP_Improved(G, k):
     f.close()
     #print("max val is:", maxval, "with seeds", storePayoffs[maxval])
     #print(storePayoffs)
-    return maxval
+    return maxval, storePayoffs[maxval]
 
 #Here, I just put all the code to compute the subtree payoff, since otherwise I would have to repeat all of this, for partitions with the root
 #and partitions without the root.
@@ -595,16 +581,16 @@ def testOriginaltoCluster(n, c, k):
 def testCluster(G, k):
     edge_data = str(G.edges.data())
     node_data = str(G.nodes.data())
+    makeMatrix(G, G.number_of_nodes())
     f = open("make_matrix.txt", "a")
-    f.write(edge_data)
-    f.write(node_data)
+    f.write("edge data:" + edge_data + "\n")
+    f.write("node data: " + node_data)
     f.close()
     test1 = DP(G, G.number_of_nodes(), k)
-    maxval = DP_Improved(G, k)
+    maxval, seeds = DP_Improved(G, k)
     print("payoff test DP is: ", test1)
-    print("payoff subtree DP is:", maxval)
+    print("payoff subtree DP is:", maxval, "with seeds: ", seeds)
     clearVisitedNodesAndDictionaries(G)
-    makeMatrix(G, G.number_of_nodes())
 
     return G
 
@@ -620,7 +606,7 @@ def clearVisitedNodesAndDictionaries(G):
 def main():
     #G = testOriginaltoCluster(15, 0.5, 3)
    # G = college_Message()
-    G = createClusterGraph(5)
+    G = createClusterGraph(10)
     testCluster(G, 3)
 
     fig1 = plt.figure(2)
