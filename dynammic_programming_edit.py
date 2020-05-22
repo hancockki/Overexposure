@@ -470,7 +470,7 @@ def bfs(G, node, source):
             if neighbor in allSubsets:
                 continue
             if neighbor in subgraph:
-                #print("already picked", neighbor)
+                print("already picked", neighbor)
                 continue
             elif neighbor != source and neighbor != node:
                 queue.append(neighbor)
@@ -557,10 +557,13 @@ def testOriginaltoCluster(n, c, k):
     G_test = nx.random_tree(n)
     setAllNodeAttributes(G_test)
     G_cluster = buildClusteredSet(G_test, c)
-    print("cluster dict:", clusterDict)
-    print("rej node dict", rejectingNodeDict)
-    print(G_cluster.edges.data())
-    print(G_cluster.nodes.data())
+
+    f = open("make_matrix.txt", "a")
+    f.write("cluster dictionary:" + str(clusterDict) + "\n")
+    f.write("rej node dictionary: " + str(rejectingNodeDict) + "\n")
+    f.write("edge data:" + str(G_cluster.edges.data()) + "\n")
+    f.write("node data:" + str(G_cluster.nodes.data()) + "\n")
+    f.close()
     test1 = DP(G_cluster, G_cluster.number_of_nodes(), k)
     maxval = DP_Improved(G_cluster, k)
     print("payoff test DP is: ", test1)
@@ -584,7 +587,7 @@ def testCluster(G, k):
     makeMatrix(G, G.number_of_nodes())
     f = open("make_matrix.txt", "a")
     f.write("edge data:" + edge_data + "\n")
-    f.write("node data: " + node_data)
+    f.write("node data: " + node_data + "\n")
     f.close()
     test1 = DP(G, G.number_of_nodes(), k)
     maxval, seeds = DP_Improved(G, k)
@@ -604,10 +607,10 @@ def clearVisitedNodesAndDictionaries(G):
 
 #main function, used for calling things
 def main():
-    #G = testOriginaltoCluster(15, 0.5, 3)
+    G = testOriginaltoCluster(10, 0.7, 3)
    # G = college_Message()
-    G = createClusterGraph(10)
-    testCluster(G, 3)
+    #G = createClusterGraph(30)
+    #testCluster(G, 10)
 
     fig1 = plt.figure(2)
     nx.draw_networkx(G, pos=nx.spring_layout(G, iterations=200), arrows=False, with_labels=True)
