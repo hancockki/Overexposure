@@ -329,14 +329,13 @@ def subsetDP(G, G_sub, i, k, source):
                 storePayoff[numSeeds][j] = tup[-1][1]
                 if tup[-1][0] == storeSeeds[numSeeds-1][j-1]:
                     storeSeeds[numSeeds][j].append(nodes[j])
-                print(" \n lastEntry: ", lastEntry, " lastEntryUp: ", lastEntryUp, "nextGuess: ", nextGuess, "last: " , last)
-        print(storePayoff)
-        print(storeSeeds)
+    print("PAYOFF MATRIX: \n" , storePayoff)
+    print("PAYOFF SEEDS : \n" , storeSeeds)
     maxVal = storePayoff[k-1][i-1]
     for j in range(0,k):
         if storePayoff[j][i-1] > maxVal:
             maxVal = storePayoff[j][i-1]
-    #print("optimal seed set is:", storeSeeds[j][i-1])
+    print("optimal seed set is:", storeSeeds[j][i-1])
     return (maxVal, storeSeeds[j][i-1])
 
 #here, we improve dynamic programming by testing different numbers of nodes in different subtrees.
@@ -351,54 +350,73 @@ def DP_Improved(G, k):
     #storePayoff = [[0] * i for _ in range(k)] #store payoff
     #storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
     tree = nx.bfs_tree(G, 0)
-    nodes = list((nx.topological_sort(tree))) #look at nodes in topological order
-    print("root is", nodes[0])
-    neighbors = nx.neighbors(G, nodes[0])
+    #nodes = list(reversed(list(nx.topological_sort(tree)))) #look at nodes in topological order
+    
+    nodes_tup = sorted(G.degree, key=lambda x: x[1], reverse=True)
+    print("root is", nodes_tup[0][0])
+    root = nodes_tup[0][0]
+    neighbors = G.neighbors(root) #for making subtrees
     subgraph_list = [] #store subgraph
-    for node in neighbors: #we want to compute payoff for the subtree 
-        subgraph = bfs(G, node, nodes[0]) #go down a branch
-        print("subgraph:", subgraph)
-        subgraph_list.append(subgraph)
+    for node in neighbors: #we want to compute payoff for each subtree 
+        print("NEIGHBOR IS:", node)
+        subgraph = bfs(G, node, root) #go down a branch
+        subgraph_list.append(subgraph) #add to subgraph list
+    print("SUBGRAPH LIST:", subgraph_list)
+   # if len(subgraph_list) > 1:
+    #    subgraph_list.append(list(G.nodes())) #include whole graph
     num_children = len(subgraph_list)
     store_subtree_partition = [[0] * (k+1) for _ in range(num_children)] #memoization table 
-    part_without_root = partitions(k, num_children) #k seeds and num_children subtrees
-    #part_with_root = partitions(k-1, num_children) #if we pick the root node. recompute partitions with k-1 seeds
+    print("TABLE TABLE TABLE TABEL \n \n \n \n :", store_subtree_partition)
+    partitions_list = partitions(k, num_children) #k seeds and num_children subtrees
+    partitions_list = list(partitions_list) #make a list 
+   # partitions_list.append([k]) #add all seeds for whole tree
     storePayoffs = {}
 
-    for p in part_without_root: #get each partition of the seeds
+    for p in partitions_list: #get each partition of the seeds
         total_payoff = 0
         nodes_picked = []
         print("Partition p is: ", p)
         for i in range(num_children): #pick the correct number of seeds for each subgraph
+            print(i)
             subgraph_nodes = subgraph_list[i].copy()
             print("subgraph nodes:", subgraph_nodes, nodes_picked)
-            if nodes[0] not in nodes_picked:
-                print("root not yet picked")
-                subgraph_nodes.append(nodes[0])
-            
+            if root not in nodes_picked: #check if we have already added the root
+                subgraph_nodes.append(root) #if not, add the root
+
             G_sub = G.subgraph(subgraph_nodes) #we make it a subgraph of G
-            print(G_sub.edges.data())
-            print(G_sub.nodes.data())
+            #print(G_sub.edges.data())
+            #print(G_sub.nodes.data())
             nodes = list(G_sub)
             j = G_sub.number_of_nodes() 
-            print("nodes in subgraph:", nodes)
-            if p[i] != 0:
+            print("nodes in subgraph: \n", nodes, "\n")
+            if p[i] != 0: #if there are seeds to seed!
                 if store_subtree_partition[i][p[i]] != 0: #memoization, don't need to compute again. i is the subtree index, p[i] is the number of seeds
+                    print("MEMOIZATIONNNNNN", store_subtree_partition[i][p[i]])
                     total_payoff += store_subtree_partition[i][p[i]][0]
                     for i in store_subtree_partition[i][p[i]][1]:
-                        nodes_picked.append(i)
+                        nodes_picked.append(i) 
                     continue
                 else:
                     #print("num seeds is:", p[i])
-                    print("now doing DP starting from" , nodes[0], j, p[i])
+                    print("now doing DP starting from" , nodes[0], "with num nodes:", j, p[i])
                     subtree_payoff, subtree_nodes_picked = subsetDP(G, G_sub, j, p[i], nodes[0]) #get payoff for j seeds in the subgraph
                     total_payoff += subtree_payoff #add payoff 
                     for k in subtree_nodes_picked:
                         nodes_picked.append(k)
-                    print("nodes picked so far", nodes_picked, i)
+                    if root in subtree_nodes_picked:
+                        print("root picked!!!!!!!!!!!!!!!!!!!!!!")
+                        for j in G.neighbors(root):
+                            print(j)
+                            subtract = G.get_edge_data(j, root)
+                            print("SUBTRACTING", subtract)
+                            if j not in G_sub:
+                                subtract = subtract['weight']
+                                total_payoff -= subtract
+                    print("nodes picked so far: \n ", nodes_picked, i)
+                    print("payoff so far: \n" , total_payoff)
                     store_subtree_partition[i][p[i]] = [subtree_payoff, subtree_nodes_picked] #store in table
-        print("Payoffs so far: ", storePayoffs)
         storePayoffs[total_payoff] = nodes_picked, p 
+        print("Payoffs so far: ", storePayoffs)
 
     maxval = max(storePayoffs) #get largest subset value, out of all (with/without root)
     f = open("make_matrix.txt", "a")
@@ -477,7 +495,7 @@ def bfs(G, node, source):
                 allSubsets.append(neighbor)
                 subgraph.append(neighbor)
                 #print("adding:", neighbor)
-    #print("subgraph is", subgraph)
+    print("subgraph is", subgraph)
     return subgraph
 
 #we defined a new cluster and are adding a node to the cluster graph, whose weight is the number of accepting nodes in that cluster
@@ -607,11 +625,10 @@ def clearVisitedNodesAndDictionaries(G):
 
 #main function, used for calling things
 def main():
-    G = testOriginaltoCluster(10, 0.7, 3)
+    #G = testOriginaltoCluster(10, 0.7, 3)
    # G = college_Message()
-    #G = createClusterGraph(30)
-    #testCluster(G, 10)
-
+    G = createClusterGraph(7)
+    testCluster(G, 3)
     fig1 = plt.figure(2)
     nx.draw_networkx(G, pos=nx.spring_layout(G, iterations=200), arrows=False, with_labels=True)
     plt.show()
