@@ -273,86 +273,100 @@ def DP(G, i, k): #doesn't consider subtrees
 
 def recursive_DP(G, tree, k, source, storePayoff, witness):
     #TRUE is 0 and FALSE is 1 for storePayoff
-    print("source is:", source)
+    #print("source is:", source)
+    precomputed_0 = precomputed_1 = False
+    if storePayoff[0][source][k]  != None: #already computed
+        precomputed_0 = True
+    if storePayoff[1][source][k] != None: #already computed
+        precomputed_1 = True
+
     if k <= 0: #base case, meaning we have no seeds
-        print("no seeds")
-        return
-    if tree.out_degree(source) == 0: #meaning we are at a leaf node
-        print("at leaf node")
-        if k >= 1:
-            neighbor = list(nx.neighbors(G, source))
-            edge_data = G.get_edge_data(source, neighbor[0])
-            storePayoff[0][source][k-1] = G.nodes[source]['weight'] - edge_data['weight']
-            storePayoff[1][source][k-1] = 0
-        else:
-            storePayoff[0][source][k-1] = storePayoff[1][source][k-1] = 0
+        #print("no seeds")
+        storePayoff[0][source][k] = float("-inf") 
+        storePayoff[1][source][k] = 0
         return 
-    if storePayoff[0][source][k-1]  != None: #already computed
-        return
-    if storePayoff[1][source][k-1] != None: #already computed
-        return
+    if tree.out_degree(source) == 0: #base case, meaning we are at a leaf node
+        #print("at leaf node")
+        #if k >= 1:
+        #neighbor = list(nx.neighbors(G, source))
+        #edge_data = G.get_edge_data(source, neighbor[0])
+        storePayoff[0][source][k] = G.nodes[source]['weight']
+        storePayoff[1][source][k] = 0
+       # else:
+      #  storePayoff[0][source][k] = storePayoff[1][source][k] = 0
+        return 
     
     #CASE 1: LEAVE SOURCE
+    if not precomputed_1:
+        neighbors_list = []
+        for i in list(tree.out_edges(source)):
+            neighbors_list.append(i[1])
 
-    neighbors = list(tree.out_edges(source))
-    neighbors_list = []
-    for i in neighbors:
-        neighbors_list.append(i[1])
-
-    print(neighbors_list, "NEIGHBORS LIST")
-    num_children = len(neighbors_list)
-    partitions_list = partitions(k, num_children)
-    maxSum = float("-inf")
-    maxPartition = None
-    take_child = {i:False for i in neighbors_list} #dictionary to keep track of whether we've taken the children
-    print("LEAVE SOURCE")
-    for p in partitions_list:
-        sum_so_far = 0
-        for i in range(0, num_children):
-            print("p is", p[i])
-            if p[i] > 0:
+        #print(neighbors_list, "NEIGHBORS LIST")
+        num_children = len(neighbors_list)
+        partitions_list = list(partitions(k, num_children)) #seed all k seeds
+        maxSum = float("-inf")
+        opt_allocation = None
+        opt_take_child = None
+        #take_child = {(i, j):False for i, j in zip(neighbors_list, partitions_list)} #dictionary to keep track of whether we've taken the children
+       # print("LEAVE SOURCE")
+        for p in partitions_list:
+            take_child = {}
+            if p == [2,1,0] and source == 1:
+                print("debugging")
+           # print(p)
+            sum_so_far = 0
+            allocation = {}
+            for i in range(0, num_children):
+               # print("p is", p[i])
+                allocation[neighbors_list[i]] = p[i]
                 recursive_DP(G, tree, p[i], neighbors_list[i], storePayoff, witness)
                 edge_weight = G.get_edge_data(source, neighbors_list[i])
-                if storePayoff[0][neighbors_list[i]][p[i]-1] - edge_weight['weight'] >= storePayoff[1][neighbors_list[i]][p[i]-1]:
-                    print("take child:", neighbors_list[i])
-                    sum_so_far += storePayoff[0][neighbors_list[i]][p[i]-1] - edge_weight['weight']
+                if storePayoff[0][neighbors_list[i]][p[i]] - edge_weight['weight'] >= storePayoff[1][neighbors_list[i]][p[i]]:
+                   # print("take child:", neighbors_list[i])
+                    sum_so_far += storePayoff[0][neighbors_list[i]][p[i]] - edge_weight['weight']
                     take_child[neighbors_list[i]] = True
                 else:
-                    sum_so_far += storePayoff[1][neighbors_list[i]][p[i]-1]
-                    #take_child[neighbors_list[i]] = False
-        if sum_so_far > maxSum:
-            maxSum = sum_so_far
-            maxPartition = p
-    storePayoff[1][source][k-1] = maxSum
-    witness[1][source][k-1] = (take_child, maxPartition)
+                    sum_so_far += storePayoff[1][neighbors_list[i]][p[i]]
+                    take_child[neighbors_list[i]] = False
+            if sum_so_far > maxSum:
+                maxSum = sum_so_far
+                opt_allocation = allocation
+                opt_take_child = take_child
+        if source == 1:
+            print("debugging")
+        storePayoff[1][source][k] = maxSum
+        witness[1][source][k] = (opt_take_child, opt_allocation)
 
     #CASE 2: TAKE SOURCE
 
-    partitions_list = partitions(k-1, num_children)
-    maxSum = float("-inf")
-    maxPartition = None
-    take_child = {i:False for i in neighbors_list}
-    print("TAKE SOURCE")
-    for p in partitions_list:
-        sum_so_far = 0
-        for i in range(0, num_children):
-            recursive_DP(G, tree, p[i], neighbors_list[i], storePayoff, witness)
-            edge_data = G.get_edge_data(neighbors_list[i], source)
-            print("current partition:", p[i], " \n take child payoff:", storePayoff[0][neighbors_list[i]][p[i]-1])
-            if p[i] > 0:
-                if storePayoff[0][neighbors_list[i]][p[i]-1] + G.nodes[source]['weight'] - edge_data['weight']>= storePayoff[1][neighbors_list[i]][p[i]-1] + G.nodes[source]['weight'] - edge_data['weight']:
-                    print("take child, no root:", neighbors_list[i])
-                    sum_so_far += storePayoff[0][neighbors_list[i]][p[i]-1] - edge_data['weight']
+    if not precomputed_0:
+        partitions_list = partitions(k-1, num_children)
+        maxSum = float("-inf")
+        opt_allocation = None
+        take_child = {}
+       # take_child = {i:False for i in neighbors_list}
+        #print("TAKE SOURCE")
+        for p in partitions_list:
+            sum_so_far = 0
+            allocation = {}
+            for i in range(0, num_children):
+                allocation[neighbors_list[i]] = p[i]
+                recursive_DP(G, tree, p[i], neighbors_list[i], storePayoff, witness)
+                edge_data = G.get_edge_data(neighbors_list[i], source)
+                # print("current partition:", p[i], " \n take child payoff:", storePayoff[0][neighbors_list[i]][p[i]-1])
+                if storePayoff[0][neighbors_list[i]][p[i]] >= storePayoff[1][neighbors_list[i]][p[i]]:
+                    #print("take child, root:", neighbors_list[i])
+                    sum_so_far += storePayoff[0][neighbors_list[i]][p[i]] - edge_data['weight']
                     take_child[neighbors_list[i]] = True
                 else:
-                    sum_so_far += storePayoff[1][neighbors_list[i]][p[i]-1] - edge_data['weight']
+                    sum_so_far += storePayoff[1][neighbors_list[i]][p[i]] - edge_data['weight']
                     take_child[neighbors_list[i]] = False
-        if sum_so_far > maxSum:
-            maxSum = sum_so_far
-            maxPartition = p
-    storePayoff[0][source][k-1] = maxSum + G.nodes[source]['weight']
-    witness[0][source][k-1] = (take_child, maxPartition)
-    return storePayoff, witness
+            if sum_so_far > maxSum:
+                maxSum = sum_so_far
+                opt_allocation = allocation
+        storePayoff[0][source][k] = maxSum + G.nodes[source]['weight'] 
+        witness[0][source][k] = (take_child, opt_allocation)
 
 def subsetDP(G, G_sub, i, k, source):
     #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
@@ -686,29 +700,29 @@ def testOriginaltoCluster(n, c, k):
 def testCluster(G, k):
     edge_data = str(G.edges.data())
     node_data = str(G.nodes.data())
-    makeMatrix(G, G.number_of_nodes())
-    f = open("make_matrix.txt", "a")
-    f.write("edge data:" + edge_data + "\n")
-    f.write("node data: " + node_data + "\n")
-    f.close()
+    #makeMatrix(G, G.number_of_nodes())
+   # f = open("make_matrix.txt", "a")
+   # f.write("edge data:" + edge_data + "\n")
+   # f.write("node data: " + node_data + "\n")
+  #  f.close()
     #test1 = DP(G, G.number_of_nodes(), k)
    # maxval, seeds = DP_Improved(G, k)
 
-    storePayoff = [ [ [None] * k for _ in range(G.number_of_nodes())] for _ in range(2)]
-    witness = [ [ [None] * k for _ in range(G.number_of_nodes())] for _ in range(2)]
-    print(storePayoff)
-    print(storePayoff[0][4][2])
-    storePayoff[0][4][2] = 10
-    storePayoff[1][4][2] = 10
-    print(storePayoff)
+    storePayoff = [ [ [None] * (k+1) for _ in range(G.number_of_nodes())] for _ in range(2)]
+    witness = [ [ [None] * (k+1) for _ in range(G.number_of_nodes())] for _ in range(2)]
     #tree = nx.bfs_tree(G, 0)
     nodes_tup = sorted(G.degree, key=lambda x: x[1], reverse=True) #sort by highest degree node
     print("root is", nodes_tup[0][0]) #take top degree node as root
     root = nodes_tup[0][0]
     tree = nx.bfs_tree(G, root)
 
-    storePayoff, witness = recursive_DP(G, tree, k, root, storePayoff, witness)
-    print(storePayoff, witness)
+    recursive_DP(G, tree, k, root, storePayoff, witness)
+    for i in range(G.number_of_nodes()):
+        print("node:", i)
+        for j in range(2):
+            print("take or not?", j)
+            for l in range(k, 0, -1):
+                print(l, "--->" , storePayoff[j][i][l] , "witness:", witness[j][i][l])
 
     #print("payoff test DP is: ", test1)
     #print("payoff subtree DP is:", maxval, "with seeds: ", seeds)
@@ -724,15 +738,77 @@ def clearVisitedNodesAndDictionaries(G):
     rejectingNodeDict.clear()
     clusterDict.clear()
 
+G_DP = nx.Graph()
+
+G_DP.add_edge(0,6,weight=6)
+G_DP.add_edge(0,1,weight=8)
+G_DP.add_edge(6,7,weight=10)
+G_DP.add_edge(6,10,weight=2)
+G_DP.add_edge(14,15,weight=5)
+G_DP.add_edge(2,3, weight=4)
+G_DP.add_edge(1,4, weight=3)
+G_DP.add_edge(1,2, weight=7)
+G_DP.add_edge(6,14, weight=4)
+G_DP.add_edge(4,5, weight=7)
+G_DP.add_edge(6,12, weight=5)
+G_DP.add_edge(12,13, weight=8)
+G_DP.add_edge(10,11, weight=3)
+G_DP.add_edge(7,9, weight=4)
+G_DP.add_edge(7,8, weight=6)
+G_DP.nodes[0]['weight'] = 10
+G_DP.nodes[1]['weight']=12
+G_DP.nodes[2]['weight']=5
+G_DP.nodes[3]['weight']=8
+G_DP.nodes[4]['weight']=4
+G_DP.nodes[5]['weight']=13
+G_DP.nodes[6]['weight']=14
+G_DP.nodes[7]['weight']=15
+G_DP.nodes[8]['weight']=7
+G_DP.nodes[9]['weight']=11
+G_DP.nodes[10]['weight']=5
+G_DP.nodes[11]['weight']=2
+G_DP.nodes[12]['weight']=6
+G_DP.nodes[13]['weight']=3
+G_DP.nodes[14]['weight']=7
+G_DP.nodes[15]['weight']=9
+
+G_DP2 = nx.Graph()
+
+G_DP2.add_edge(0,6,weight=6)
+G_DP2.add_edge(0,1,weight=8)
+G_DP2.add_edge(6,7,weight=10)
+G_DP2.add_edge(2,3, weight=4)
+G_DP2.add_edge(1,4, weight=3)
+G_DP2.add_edge(1,2, weight=7)
+G_DP2.add_edge(4,5, weight=7)
+G_DP2.nodes[0]['weight'] = 10
+G_DP2.nodes[1]['weight']=12
+G_DP2.nodes[2]['weight']=5
+G_DP2.nodes[3]['weight']=8
+G_DP2.nodes[4]['weight']=4
+G_DP2.nodes[5]['weight']=13
+G_DP2.nodes[6]['weight']=14
+G_DP2.nodes[7]['weight']=15
+
 #main function, used for calling things
 def main():
     #G = testOriginaltoCluster(10, 0.7, 3)
    # G = college_Message()
-    G = createClusterGraph(6)
-    testCluster(G, 3)
-    fig1 = plt.figure(2)
-    nx.draw_networkx(G, pos=nx.spring_layout(G, iterations=200), arrows=False, with_labels=True)
+    #G = createClusterGraph(6)
+    testCluster(G_DP2, 3)
+
+    pos = nx.spring_layout(G_DP2)
+
+    nx.draw(G_DP2, pos)
+    node_labels = nx.get_node_attributes(G_DP2,'weight')
+    nx.draw_networkx_labels(G_DP2, pos, labels = node_labels)
+    edge_labels = nx.get_edge_attributes(G_DP2,'weight')
+    nx.draw_networkx_edge_labels(G_DP2, pos, labels = edge_labels)
+    plt.savefig('this.png')
     plt.show()
+    #fig1 = plt.figure(2)
+    #nx.draw_networkx(G_DP, pos=nx.spring_layout(G_DP, iterations=200), arrows=False, with_labels=True)
+    #plt.show()
 
 if __name__== "__main__":
   main()
