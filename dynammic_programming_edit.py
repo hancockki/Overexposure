@@ -700,7 +700,7 @@ def testOriginaltoCluster(n, c, k):
 def testCluster(G, k):
     edge_data = str(G.edges.data())
     node_data = str(G.nodes.data())
-    #makeMatrix(G, G.number_of_nodes())
+    makeMatrix(G, G.number_of_nodes())
    # f = open("make_matrix.txt", "a")
    # f.write("edge data:" + edge_data + "\n")
    # f.write("node data: " + node_data + "\n")
@@ -794,16 +794,16 @@ G_DP2.nodes[7]['weight']=15
 def main():
     #G = testOriginaltoCluster(10, 0.7, 3)
    # G = college_Message()
-    #G = createClusterGraph(6)
-    testCluster(G_DP2, 3)
+    G = createClusterGraph(50)
+    testCluster(G, 3)
 
-    pos = nx.spring_layout(G_DP2)
+    pos = nx.spring_layout(G_DP)
 
-    nx.draw(G_DP2, pos)
-    node_labels = nx.get_node_attributes(G_DP2,'weight')
-    nx.draw_networkx_labels(G_DP2, pos, labels = node_labels)
-    edge_labels = nx.get_edge_attributes(G_DP2,'weight')
-    nx.draw_networkx_edge_labels(G_DP2, pos, labels = edge_labels)
+    nx.draw(G_DP, pos)
+    node_labels = nx.get_node_attributes(G_DP,'weight')
+    nx.draw_networkx_labels(G_DP, pos, labels = node_labels)
+    edge_labels = nx.get_edge_attributes(G_DP,'weight')
+    nx.draw_networkx_edge_labels(G_DP, pos, labels = edge_labels)
     plt.savefig('this.png')
     plt.show()
     #fig1 = plt.figure(2)
