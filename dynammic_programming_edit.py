@@ -717,6 +717,9 @@ def testCluster(G, k):
     tree = nx.bfs_tree(G, root)
 
     recursive_DP(G, tree, k, root, storePayoff, witness)
+    print(storePayoff[0][root][k])
+    print(storePayoff[1][root][k])
+    """
     for i in range(G.number_of_nodes()):
         print("node:", i)
         for j in range(2):
@@ -724,6 +727,7 @@ def testCluster(G, k):
             for l in range(k, 0, -1):
                 print(l, "--->" , storePayoff[j][i][l] , "witness:", witness[j][i][l])
 
+    """
     #print("payoff test DP is: ", test1)
     #print("payoff subtree DP is:", maxval, "with seeds: ", seeds)
     clearVisitedNodesAndDictionaries(G)
@@ -794,8 +798,8 @@ G_DP2.nodes[7]['weight']=15
 def main():
     #G = testOriginaltoCluster(10, 0.7, 3)
    # G = college_Message()
-    G = createClusterGraph(50)
-    testCluster(G, 3)
+    G = createClusterGraph(250)
+    testCluster(G, 50)
 
     pos = nx.spring_layout(G_DP)
 
