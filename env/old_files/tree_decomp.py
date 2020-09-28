@@ -158,10 +158,10 @@ def makeMatrix(G, n):
         matrix[key][key] = value
     for i in range(n):
         fullStr = ','.join([str(elem) for elem in matrix[i] ])
-        print(fullStr)
+        #print(fullStr)
         f.write("[" + fullStr + "]" + "\n")
     f.close()
-    with open('make_matrix.csv', mode='w') as make_matrix:
+    with open('make_matrix.csv', mode='w', newline='') as make_matrix:
         matrix_writer = csv.writer(make_matrix, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for i in range(n):
             matrix_writer.writerow(matrix[i])
@@ -277,18 +277,10 @@ def testOriginaltoCluster(n, c, k):
     G_tree = tree_decomp[1]
     print("List of nodes, where each node is a bag, and each bag contains a set of nodes in the bag:\n", list(G_tree.nodes()), "\nList of edges, where each edge is listed:\n" , list(G_tree.edges()))
     nx.draw_networkx(G_tree, pos=nx.spring_layout(G_tree, iterations=200), arrows=False, with_labels=True)
-    fig3 = plt.figure(2)
-    nx.draw_networkx(G_test, node_color = color_map, pos=nx.spring_layout(G_test, iterations=1000), arrows=False, with_labels=True)
-    fig = plt.figure(3)
-    nx.draw_networkx(G_cluster, node_color = color_map, pos=nx.spring_layout(G_test, iterations=1000), arrows=False, with_labels=True)
-    plt.show()
-    tree_subsets(G_tree, k)
-    return G_cluster
-
-def tree_subsets(G_tree, k):
-    storeSubsets = [[-1]*k]*G_tree.number_of_nodes()
     for i in G_tree.nodes():
-        print("hi")
+        print(list(i))
+    #nx.draw_networkx(G_cluster, node_color = color_map, pos=nx.spring_layout(G_test, iterations=1000), arrows=False, with_labels=True)
+    return G_cluster
 
 #clear dictionaries for next graph to test
 def clearVisitedNodesAndDictionaries(G):
@@ -300,6 +292,7 @@ def main():
     G = testOriginaltoCluster(30, 0.6, 6)
     #testRandomCluster()
     #G = college_Message()
+
     fig1 = plt.figure(2)
     nx.draw_networkx(G, pos=nx.spring_layout(G, iterations=200), arrows=False, with_labels=True)
     plt.show()
@@ -316,12 +309,3 @@ if __name__== "__main__":
     3) In this case, we do tree decomposition, create bags, and then compute all the possible allocations of nodes, creating a table for picking
     nodes where we enumerate all possibilities for U
   """
-
-def enumerateNodes(G, k):
-    n = G.number_of_nodes()
-    storeSeeds = []
-    """
-    IDEA: compute all possible combinations of k nodes based on the bags (enumerate all subsets of each node and store a table for the payoff 
-    for each cluster). We will store a table for the highest payoff of choosing each bag, and then combine the results to get
-    the best payoff from all the bags
-    """

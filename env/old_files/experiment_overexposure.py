@@ -18,7 +18,7 @@ import copy
 #from IPython.display import Image
 #from mat4py import savemat
 import csv
-from network2tikz import plot
+
 
 
 # In[31]:
@@ -298,20 +298,6 @@ G_DP.node[14]['weight']=6
 G_DP.node[15]['weight']=7
 G_DP.node[16]['weight']=9
 
-style = {}
-node_weights = []
-edge_weights = []
-
-for i in range(1, G_DP.number_of_nodes()+1):
-    print(G_DP.node[i]['weight'])
-    node_weights.append(G_DP.node[i]['weight'])
-for e in G_DP.edges.data('weight'):
-    print(e[2])
-    edge_weights.append(e[2])
-
-style['node_label'] = node_weights
-style['edge_label'] = edge_weights
-plot(G_DP, 'G_DP.tex', **style)
 G_DP2 = nx.Graph()
 
 G_DP2.add_edge(0,2,weight=7)
@@ -407,19 +393,24 @@ def setPartitionNodeAttributes(partition_list, G, criticality):
         
 # In[38]:
 
+
 def setVisitedFalse(G):    
     nodeList = G.nodes()
     for nodeID in nodeList:
         G.node[nodeID]["visited"] = False
 
+
 # In[39]:
+
 
 def initClusters(G):
     nodeList = G.nodes()
     for nodeID in nodeList:
         G.node[nodeID]["cluster"] = -1
 
+
 # In[40]:
+
 
 def printNodeAttributes(G):
     nodeList = G.nodes()
@@ -527,6 +518,7 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
                     G.node[neighbor]['cluster'] = clusterNumber
                     G.node[neighbor]["visited"] = True
                     acceptingInThisCluster += 1
+                    
                     if clusterNumber not in clusterDict:
                         clusterDict[clusterNumber] = neighbor
                     
@@ -830,14 +822,14 @@ def bfs(G, source, phi):
 # In[50]:
 
 def computeNegPayoff(G, nodeNum):
-    #print("node is:" , nodeNum)
+    print("node is:" , nodeNum)
     nodeWeight = G.node[nodeNum]['weight']
     negPayoff = nx.neighbors(G, nodeNum)
     for negNode in negPayoff:
         add = G.get_edge_data(nodeNum, negNode)
         add = add['weight']
         nodeWeight -= add
-    #print("node weight is:", nodeWeight)
+    print("node weight is:", nodeWeight)
     return nodeWeight
 
 
@@ -856,7 +848,7 @@ def tryDP(G, i, k):
                 #breakpoint()
                 storeSeeds[numSeeds][j] = [node]
                 nodeWeight = computeNegPayoff(G, node)
-                #print(nodeWeight)
+                print(nodeWeight)
                 storePayoff[numSeeds][j] = nodeWeight
                 #print("first entry,", storePayoff)
 
@@ -904,8 +896,8 @@ def tryDP(G, i, k):
                     table = storeSeeds[numSeeds-1][j-1][:]
                     table.append(node)
                     storeSeeds[numSeeds][j] = table
-    #print(storePayoff)
-    #print(storeSeeds)
+    print(storePayoff)
+    print(storeSeeds)
     maxVal = storePayoff[k-1][i-1]
     for j in range(0,k):
         if storePayoff[j][i-1] > maxVal:
