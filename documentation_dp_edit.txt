@@ -1,4 +1,5 @@
-Here I will explain what each function does in some more detail, for the dynamicprogramming_edit file.
+Here I will explain what each function does in some more detail, for the dynamicprogramming_edit file. This file is where the most recent work is. 
+Just for a summary, really the most important function right now is recursiveDP...its the most recent algorithm
 
 createClusterGraph -- 
     This simple function creates a tree graph using the built-in function nx.random_tree, with the number of Nodes (clusters) as the argument. 
@@ -70,6 +71,13 @@ DP --
 subsetDP --
     Basically does the same as the above algorithm but only on a SUBSET of nodes (ie, starting DP from somewhere partially up the tree)
 
+recursiveDP --
+
+    THIS IS THE CURRENTLY USED algorithm
+    This algorithm is the most recent improvement since it actually uses recursion to solve the problem.
+    The key inequalities in the algorithm are outlined in the Overleaf pseudocode.
+    Does not return anything, rather builds a memoization table with all the payoffs
+    
 DP_Improved --
 
     Improve dynamic programming by trying to figure out which is the best ordering of seeding. We look at all the neighbors of the root node and
@@ -100,6 +108,39 @@ college_Message --
 
 testOriginaltoCluster --
     Tests how well we are converting the original graph to a cluster graph.
+
+
+CURRENT PROBLEM:
+How do we properly construct the cluster graph, when A) clusters may be separated by more than one node, and B) multiple clusters share the same rejecting nodes
+We also previously discussed C) the issue of triangularization
+
+I propose trying to implement a model where instead of the edges having numerical weights, the edges have vectors which are represented as a list of rejecting nodes.
+Then, when we seed a given cluster, we "check" off all those rejecting nodes, so when we choose a cluster with overlapping rejecting nodes,
+we know which ones to not count. 
+
+However, this bears another problem: we have to completely change our dynamic programming algorithm, which is based on numerical edge weights. How can we alter DP to account for this?
+    A) Try all possible combinations, perhaps some sort of backtracking algorithm. 
+    B) We have to consider only immediate neighbors in numRejecting, as if there is more than one rejecting node separating two clusters, the rejecting nodes in the "middle" 
+    will never be reached.
+
+My question now is:
+    What should we focus on? Restricting the problem and getting a working optimization algorithm, or trying to generalize the problem?
+
+
+Tree Case (original graph):
+    You start with a tree. Only scenario that leads to a complete cluster graph is when a lot of branches share a single rejecting node. Can we delete zeo weight
+    edge without any impact on optimal solution? Try to prove by contradiction for the tree case
+    The cluster graph is not necessarily a tree
+
+
+Tree Case (cluster graph):
+    Prove the complexity is NP-hard (analyze running time)
+    Prove that it gives an optimal solution
+    Maybe the bug is actually in the linear program
+    Show some smaller examples
+    Save them in a file --> append the code to save files uniquely
+
+
 
 
 

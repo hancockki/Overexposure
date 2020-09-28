@@ -277,6 +277,8 @@ def testOriginaltoCluster(n, c, k):
     G_tree = tree_decomp[1]
     print("List of nodes, where each node is a bag, and each bag contains a set of nodes in the bag:\n", list(G_tree.nodes()), "\nList of edges, where each edge is listed:\n" , list(G_tree.edges()))
     nx.draw_networkx(G_tree, pos=nx.spring_layout(G_tree, iterations=200), arrows=False, with_labels=True)
+    for i in G_tree.nodes():
+        print(list(i))
     #nx.draw_networkx(G_cluster, node_color = color_map, pos=nx.spring_layout(G_test, iterations=1000), arrows=False, with_labels=True)
     return G_cluster
 
