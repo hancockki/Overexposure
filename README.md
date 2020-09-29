@@ -1,7 +1,18 @@
-Here I will explain what each function does in some more detail, for the dynamicprogramming_edit file. This file is where the most recent work is. 
+# Overview of files
+
+Here I will explain what each function does in some more detail, for the dynamic_programming_cleaned.py file. This file is where the most recent work is. 
 Just for a summary, really the most important function right now is recursiveDP...its the most recent algorithm
 
-createClusterGraph -- 
+## How do I understand the file?
+This file has two main goals related to this project
+1. Given a graph in which each node is either an accepting or rejecting node, create a **clustered** graph based on this, in which each cluster contains all the accepting nodes reachable from a given accepting node. Think of it as having a wall of rejecting nodes around it. The file takes a graph, labels the clusters, and produces a new graph in which each node is a CLUSTER of nodes from the original graph (weight of which is number of accepting nodes in the cluser). Each edge has a weight equalling the number of rejecting nodes between each cluster.
+2. The second step of the file is choosing the optimal seed set based on the cluster graph. the logic here is that if we seed one individual in a given cluster, the entire cluster will end up accepting since they are connected.
+
+### Note on 1.
+The first step is incomplete, as making the cluster graph only works when your input is a tree. this is still being debugged
+
+## Overview of methods in the main file
+### createClusterGraph -- 
     This simple function creates a tree graph using the built-in function nx.random_tree, with the number of Nodes (clusters) as the argument. 
     Weights for each Node are randomly assigned, as well as weights for each edge. The MOST important thing to remember for this function is that
     we are creating a CLUSTER graph, so each Node is actually a cluster of nodes, and the weight of the Node is the number of nodes in the cluster.
@@ -11,17 +22,17 @@ createClusterGraph --
     completely arbitrary graph, and the issue of going from the original graph to the clustered graph is not considered at all.
     Returns the cluster graph.
 
-setAllNodeAttributes --
+### setAllNodeAttributes --
     Basic function. Creates random weights for each node in a generated graph, and a value of -1 for the cluster indicates that the node has not 
     yet been assigned a cluster.
     Does not return anything.
 
-setVisitedFalse --
+### setVisitedFalse --
     Node attribute 'visited' is set to false. Used to reset the graph in each iteration of BFS where we need to check and see if we have
     already visited that node in our BFS.
     Does not return anything.
 
-labelClusters --
+### labelClusters --
     Perform BFS to label a cluster. Note how we called setVisitedFalse(G) upon finding an unvisited node.
     The idea is that clusters are "contained" - every cluster is separated from every other cluster by walls of
     rejecting nodes. You will never find another cluster, because if you could, it would simply be one cluster.
@@ -35,7 +46,7 @@ labelClusters --
          rejecting, the number of rejecting nodes in the cluster
          clusterNumber, the number of the cluster created
 
-buildClusteredSet --
+### buildClusteredSet --
     This function basically is the driver for labelClusters, adding new clusters until every node in the graph is in some cluster
     (even if the cluster contains a single node)
     Then, once each cluster has been created, a NEW cluster graph is made, using the funtions make_Cluster_node and make_Cluster_edge.
@@ -50,16 +61,16 @@ buildClusteredSet --
 
     Returns the cluster graph
 
-makeMatrix --
+### makeMatrix --
     Simply construct a matrix to be used in linear programming, where the main diagonal of the matrix is the cluster, and the edges are the other 
     values. Used in a separate mathematica program.
 
-computeNegPayoff --
+### computeNegPayoff --
     Given a node, adds the weights of every outgoing edge. This corresponds to the number of rejecting nodes connected to the cluster, aka the negative
     payoff.
     Subtracts this value from the node weight and returns that value.
 
-DP --
+### DP --
     Picks k clusters to seed using table-based dynamic programming.
     We do a topological sort of the nodes in the graph and start our search from the bottom of this topological sort (leaves of the tree)
     Thus, we are building up to the k best clusters, and seeding one individual in that cluster.
@@ -68,17 +79,17 @@ DP --
     orderings of picking clusters, unlike the below algorithms.
     returns the payoff and chosen clusters.
 
-subsetDP --
+### subsetDP --
     Basically does the same as the above algorithm but only on a SUBSET of nodes (ie, starting DP from somewhere partially up the tree)
 
-recursiveDP --
+### recursiveDP --
 
     THIS IS THE CURRENTLY USED algorithm
     This algorithm is the most recent improvement since it actually uses recursion to solve the problem.
     The key inequalities in the algorithm are outlined in the Overleaf pseudocode.
     Does not return anything, rather builds a memoization table with all the payoffs
     
-DP_Improved --
+### DP_Improved --
 
     Improve dynamic programming by trying to figure out which is the best ordering of seeding. We look at all the neighbors of the root node and
     identify subtrees using BFS from each of the children of the root node. thus the number of subtrees is the same as the number of children of 
@@ -94,23 +105,23 @@ DP_Improved --
 bfs --
     Does simple bfs, used in DP_improved to find subtrees.
 
-make_Cluster_node --
+### make_Cluster_node --
     Simple. Creates a cluster Node with the weight being the number of accepting nodes in the cluster minus the number of rejecting nodes that are not
     shared with another cluster.
 
-make_cluster_edge --
+### make_cluster_edge --
     More complex. Creates an edge between two clusters, BUT we have to correctly compute the number of shared rejecting nodes between two clusters. Also there's
     a big issue where if cluster A shares a node with cluster B and cluster C (the same node), then we are creating an edge A-B and an edge A-C, so the
     rejecting node is being considered TWICE when it should only be considered ONCE. We need to think more about how to compute this edge weight.
 
-college_Message --
+### college_Message --
     Sort of useless at this point. Uses a built in network from networkx as a test for the DP algorithms
 
-testOriginaltoCluster --
+### testOriginaltoCluster --
     Tests how well we are converting the original graph to a cluster graph.
 
 
-CURRENT PROBLEM:
+## CURRENT PROBLEM:
 How do we properly construct the cluster graph, when A) clusters may be separated by more than one node, and B) multiple clusters share the same rejecting nodes
 We also previously discussed C) the issue of triangularization
 

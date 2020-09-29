@@ -271,6 +271,10 @@ def DP(G, i, k): #doesn't consider subtrees
             maxVal = storePayoff[j][i-1]
     return (maxVal, storeSeeds[j][i-1])
 
+"""
+This is the most useful function in the entire file
+The last page of the LaTex file has the pseudocode for this algorithm
+"""
 def recursive_DP(G, tree, k, source, storePayoff, witness):
     #TRUE is 0 and FALSE is 1 for storePayoff
     #print("source is:", source)
@@ -719,6 +723,7 @@ def testCluster(G, k):
     recursive_DP(G, tree, k, root, storePayoff, witness)
     print(storePayoff[0][root][k])
     print(storePayoff[1][root][k])
+    
     """
     for i in range(G.number_of_nodes()):
         print("node:", i)
@@ -796,18 +801,18 @@ G_DP2.nodes[7]['weight']=15
 
 #main function, used for calling things
 def main():
-    #G = testOriginaltoCluster(10, 0.7, 3)
+    G = testOriginaltoCluster(10, 0.7, 3)
    # G = college_Message()
-    G = createClusterGraph(250)
-    testCluster(G, 50)
+    #G = createClusterGraph(50)
+    testCluster(G, 5)
 
     pos = nx.spring_layout(G_DP)
 
     nx.draw(G_DP, pos)
     node_labels = nx.get_node_attributes(G_DP,'weight')
     nx.draw_networkx_labels(G_DP, pos, labels = node_labels)
-    edge_labels = nx.get_edge_attributes(G_DP,'weight')
-    nx.draw_networkx_edge_labels(G_DP, pos, labels = edge_labels)
+    #edge_labels = nx.get_edge_attributes(G_DP,'weight')
+    nx.draw_networkx_edge_labels(G_DP, pos)
     plt.savefig('this.png')
     plt.show()
     #fig1 = plt.figure(2)
