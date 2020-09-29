@@ -1,7 +1,6 @@
 # Overview of files
 
-Here I will explain what each function does in some more detail, for the dynamic_programming_cleaned.py file. This file is where the most recent work is. 
-Just for a summary, really the most important function right now is recursiveDP...its the most recent algorithm
+Here I will explain what each function does in some more detail, for the dynamic_programming_cleaned.py file. This file is where the most recent work is. For now, the README will contain only information pertaining to dynamic_programming_cleaned file.
 
 ## How do I understand the file?
 This file has two main goals related to this project
@@ -120,6 +119,15 @@ bfs --
 ### testOriginaltoCluster --
     Tests how well we are converting the original graph to a cluster graph.
 
+## How the functions fit together
+First of all, running this program depends on whether you want to create the cluster graph or just test dynamic programming on a random graph.
+For now, we are only successfully doing the latter on the case of a tree, but are hoping to expand this.
+
+For running DP on a random graph, you want to run the following sequence of methods:
+
+createClusterGraph -> runRecursiveDP -> makeMatrix -> recursiveDP
+
+This means that for this case, most of the methods in the file can be ignored.
 
 ## CURRENT PROBLEM:
 How do we properly construct the cluster graph, when A) clusters may be separated by more than one node, and B) multiple clusters share the same rejecting nodes
