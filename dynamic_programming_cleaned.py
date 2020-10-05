@@ -16,6 +16,7 @@ import csv
 global rejectingNodeDict
 global clusterDict
 global allSubsets
+#this is a dictionary where the keys are cluster numbers and the value is the rejecting nodes connected to the cluster
 rejectingNodeDict = {}
 clusterDict = {}
 allSubsets = []
@@ -191,7 +192,7 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
 
 
 def makeMatrix(G, n):
-    f = open("make_matrix.txt", "a")
+    f = open("make_matrix.txt", "w")
     f.write("\n Next test: \n")
     matrix = [[0] * n for _ in range(n)] #store payoff
     weight = nx.get_node_attributes(G, name='weight')
@@ -274,7 +275,7 @@ def recursive_DP(G, tree, k, source, storePayoff, witness):
                 recursive_DP(G, tree, p[i], neighbors_list[i], storePayoff, witness) #recurse on current allocation
                 edge_weight = G.get_edge_data(source, neighbors_list[i]) # get the edge weight
 
-                #IMPORTANT!!!!!!! If the payoff for taking is GREATER than the payoff for leaving the child, take it
+                #IMPORTANT!!!!!!! If the payoff for taking the child minus the weight of the negative edge is GREATER than the payoff for leaving the child, take it
                 if storePayoff[0][neighbors_list[i]][p[i]] - edge_weight['weight'] >= storePayoff[1][neighbors_list[i]][p[i]]:
                    # print("take child:", neighbors_list[i])
                     sum_so_far += storePayoff[0][neighbors_list[i]][p[i]] - edge_weight['weight']
@@ -312,7 +313,7 @@ def recursive_DP(G, tree, k, source, storePayoff, witness):
                 edge_data = G.get_edge_data(neighbors_list[i], source)
                 # print("current partition:", p[i], " \n take child payoff:", storePayoff[0][neighbors_list[i]][p[i]-1])
 
-                #IMPORTANT: we need to check if taking the child is better than leaving
+                #IMPORTANT: we need to check if taking the child is better than leaving. We've already subtracted the weight of the negative edge
                 if storePayoff[0][neighbors_list[i]][p[i]] >= storePayoff[1][neighbors_list[i]][p[i]]:
                     #print("take child, root:", neighbors_list[i])
                     sum_so_far += storePayoff[0][neighbors_list[i]][p[i]] - edge_data['weight']
@@ -351,13 +352,16 @@ that share rejecting nodes
     rejectingNodesDict -> rejecting node dictionary
 """
 def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
+    print(rejectingNodeDict)
+    # 
     for clusterNum, rejNodes in rejectingNodesDict.items():
         for clusterNum2, rejNodes2 in rejectingNodesDict.items():
             if clusterNum >= clusterNum2:
                 continue
             else:
                 #intersection = [value for value in rejNodes if value in rejNodes2] #compute intersection
-                intersection = rejNodes.union(rejNodes2)
+                intersection = rejNodes.intersection(rejNodes2)
+                print("intersection is", intersection)
 
                 #####   MTI: COMMENTING OUT FOR NOW. SEE COMMENT IN labelClusters(.) FUNCTION.
                 #we have to confront the situation where there are many rejecting nodes appearing in a 'line' such that we never 
@@ -425,7 +429,7 @@ def testOriginaltoCluster(n, threshold):
     setAllNodeAttributes(G_test)
     G_cluster = buildClusteredSet(G_test, threshold)
 
-    f = open("make_matrix.txt", "a")
+    f = open("make_matrix_info.txt", "w+")
     f.write("cluster dictionary:" + str(clusterDict) + "\n")
     f.write("rej node dictionary: " + str(rejectingNodeDict) + "\n")
     f.write("edge data:" + str(G_cluster.edges.data()) + "\n")
@@ -440,8 +444,9 @@ def testOriginaltoCluster(n, threshold):
             color_map.append('red')
         else:
             color_map.append('green')
-    fig2 = plt.figure(1)
-    nx.draw_networkx(G_test, node_color = color_map, pos=nx.spring_layout(G_test, iterations=1000), arrows=False, with_labels=True)
+    # graph original tree
+    plt.figure(1)
+    nx.draw_networkx(G_test, node_color = color_map, pos=nx.spring_layout(G_test), arrows=False, with_labels=True)
     return G_cluster
 
 """
@@ -462,8 +467,8 @@ def runRecursiveDP(G, k):
     root = nodes_tup[0][0]
     tree = nx.bfs_tree(G, root)
     recursive_DP(G, tree, k, root, storePayoff, witness)
-    print(storePayoff[0][root][k])
-    print(storePayoff[1][root][k])
+    print("best payoff root", storePayoff[0][root][k])
+    print("best payoff no root",storePayoff[1][root][k])
 
     #print("payoff test DP is: ", test1)
     #print("payoff subtree DP is:", maxval, "with seeds: ", seeds)
@@ -479,13 +484,14 @@ def clearVisitedNodesAndDictionaries(G):
 
 #main function, used for calling things
 def main():
-    #G = testOriginaltoCluster(10, 0.7)
+    #G = testOriginaltoCluster(50, 0.7)
    # G = college_Message()
-    G = createClusterGraph(50, 20)
+    G = createClusterGraph(15, 20)
     runRecursiveDP(G, 5)
     pos = nx.spring_layout(G)
     node_labels = nx.get_node_attributes(G,'weight')
 
+    plt.figure(2)
     nx.draw(G, pos)
     nx.draw_networkx_labels(G, pos=pos, labels=node_labels)
     #edge_labels = nx.get_edge_attributes(G,'weight')
