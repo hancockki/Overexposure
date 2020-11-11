@@ -609,6 +609,7 @@ def runRecursiveDP(G, k):
     print("best payoff no root",storePayoff[1][root][k])
     clearVisitedNodesAndDictionaries(G)
 
+<<<<<<< HEAD
 def runTreeDecompDP(G, tree_decomp, k):
     storePayoffCluster = [ [ [None] * (k+1) for _ in range(G.number_of_nodes())] for _ in range(2)]
     storePayoffTree = [ [ [None] * (k+1) for _ in range(tree_decomp.number_of_nodes())]]
@@ -619,6 +620,40 @@ def runTreeDecompDP(G, tree_decomp, k):
     for node in tree.nodes():
         print(node)
     tree_decomp_DP(G, tree, k, root, storePayoffCluster, storePayoffTree, [])
+=======
+'''
+Brute force algorithm used to check if tree decomposition is working properly
+
+@params:
+    G --> the cluster graph we are seeding from
+    k --> the number of clusters we are seeding
+    debug --> do (or not) debug print statments (will delete these later bc makes code look messy, but left for now)
+@returns:
+    best_payoff --> payoff of optimal k seed set
+'''
+def bruteForce(G, k, debug):
+    combinations = list(itertools.combinations(G.nodes(), k)) # all possible combinations n choose k
+    best_payoff = 0      
+    for combo in combinations:
+        temp_set_negative_edges = set() # set used to prevent double counting
+        payoff = 0
+        for node in combo:
+            if debug: print('in node',node, 'val', G.nodes[node]['weight'])
+            edges = G.edges(node) # all neighbors of node
+            payoff += G.nodes[node]['weight']
+            if debug: print('\tupdated payoff',payoff)
+            for edge in edges: # subtracting edges from payoff (no repeats)
+                if debug: print('\tedge',edge, 'weight', G.get_edge_data(node, edge[1])['weight'])
+                is_repeat = edge in temp_set_negative_edges or (edge[1],edge[0]) in temp_set_negative_edges
+                if not(is_repeat):
+                    if edge[0] > edge[1]: temp_set_negative_edges.add(edge)  
+                    else: temp_set_negative_edges.add((edge[1],edge[0]))
+                    payoff = payoff - G.get_edge_data(node, edge[1])['weight']
+                    if debug: print('\tupdated payoff',payoff)
+        if (payoff > best_payoff): best_payoff = payoff
+        if debug: print('selected nodes',combo,'negative edges',temp_set_negative_edges,'total payoff',payoff)
+    return(best_payoff)
+>>>>>>> d7eafdf19470a6db8ddcf802983c2304f8cdfab0
 
 #clear dictionaries for next graph to test
 def clearVisitedNodesAndDictionaries(G):
@@ -641,6 +676,7 @@ def main():
      #   plt.show()
       #  return
    # G = college_Message()
+<<<<<<< HEAD
     #G2 = createClusterGraph(15, 20)
     runRecursiveDP(G, 10)
     pos = nx.spring_layout(G2)
@@ -652,6 +688,19 @@ def main():
     nx.draw_networkx_labels(G2, pos=pos)
     edge_labels = nx.get_edge_attributes(G2,'data')
     nx.draw_networkx_edge_labels(G2, pos=pos, edge_labels=edge_labels)
+=======
+    G = createClusterGraph(15, 20)
+    runRecursiveDP(G, 5)
+    print('best payoff, brute force',bruteForce(G,5,False))
+    pos = nx.spring_layout(G)
+    node_labels = nx.get_node_attributes(G,'weight')
+
+    plt.figure(2)
+    nx.draw(G, pos)
+    nx.draw_networkx_labels(G, pos=pos, labels=node_labels)
+    #edge_labels = nx.get_edge_attributes(G,'weight')
+    nx.draw_networkx_edge_labels(G, pos=pos)
+>>>>>>> d7eafdf19470a6db8ddcf802983c2304f8cdfab0
     plt.savefig('this.png')
     plt.show()
 
