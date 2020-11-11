@@ -1,4 +1,5 @@
 import networkx as nx
+from networkx.algorithms.approximation.treewidth import treewidth_min_degree
 from networkx.algorithms import approximation as approx
 from operator import itemgetter
 import random
@@ -166,6 +167,8 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
     seedSet = []
     clusterCount = 0
     G_cluster = nx.Graph()
+    G_cluster2 = nx.Graph() # we create this second graph for testing purposes...essentially we DONT remove
+    #cycles and then put that graph into the LP and see if we get the same result as removing cycles
     #Build the clusters
     for nodeID in nodeList:
         if (G.nodes[nodeID]['criticality'] < threshold) and (G.nodes[nodeID]['cluster'] == -1):
@@ -174,6 +177,7 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
             seedSet.append((summedNeighbors[2], summedNeighbors[0], summedNeighbors[1]))
             #print("num rejecting=", summedNeighbors[1])
             make_Cluster_node(G_cluster, clusterCount, summedNeighbors[0])
+            make_Cluster_node(G_cluster2, clusterCount, summedNeighbors[0])
             clusterCount += 1
     #Choose up-to-k
     
@@ -186,9 +190,12 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
                 rejNodes_copy = rejNodes_copy - rejNodes2
         print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
         G_cluster.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
+        G_cluster2.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
 
-    make_cluster_edge(G_cluster, G, rejectingNodeDict)    
-    return G_cluster
+    make_cluster_edge(G_cluster, G, rejectingNodeDict, removeCycles=True)
+    make_cluster_edge(G_cluster2, G, rejectingNodeDict)
+        
+    return G_cluster, G_cluster2
 
 
 def makeMatrix(G, n):
@@ -331,6 +338,95 @@ def recursive_DP(G, tree, k, source, storePayoff, witness):
         witness[0][source][k] = (take_child, opt_allocation)
 
 """
+THIS IS THE MOST USEFUL FUNCTION IN THE ENTIRE FILE
+
+Here we are running dynamic programming recursively to choose the best k clusters in the graph to seed.
+
+@params:
+    G --> the cluster graph we are seeding from
+    tree --> the tree decomposition graph we are recursing on
+    k --> the number of clusters we are seeding
+    source --> the starting bag in the tree decomposition (highest degree)
+    storePayoff --> the payoff matrix
+    rejecting --> used to keep track of which rejecting nodes we have accounted for already
+"""
+def tree_decomp_DP(G, tree, k, source, storePayoffCluster, storePayoffTree, rejecting):
+    #TRUE is 0 and FALSE is 1 for storePayoff
+    #print("source is:", source)
+    precomputed_0 = precomputed_1 = False
+    print("root is",source)
+    if k <= 0: #base case, meaning we have no seeds
+        print("no seeds")
+        return 
+    if tree.out_degree(source) == 0: #base case, meaning we are at a leaf node
+        print("at leaf node")
+        for node in source:
+            storePayoffCluster[0][node][k] = G.nodes[node]['weight']
+            storePayoffCluster[1][node][k] = 0
+        #if k >= 1:
+        return 
+
+    neighbors_list = [] # get all the children of the current bag
+    for i in list(tree.out_edges(source)):
+        neighbors_list.append(i[1])
+
+    print(neighbors_list, "NEIGHBORS LIST")
+    num_children = len(neighbors_list) #used to partition seeds
+    partitions_list = list(partitions(k, num_children)) #seed all k seeds among the child nodes
+    maxSum = float("-inf")
+    opt_allocation = None
+    opt_take_child = None
+    for p in partitions_list: #loop through partitions of seeds
+        rejecting = []
+        print(p)
+        sum_so_far = 0
+        allocation = {}
+        j = 0
+        for child in neighbors_list: #allocate seeds among the children
+            intersection = set() #get the intersection between the child bag and parent bag
+            print("child is:", child)
+            for node in child:
+                if node not in source:
+                    intersection.add(node)
+            print("intersection between the nodes:", intersection)
+            tree_decomp_DP(G, tree, p[k], child, storePayoffCluster, storePayoffTree, rejecting) #recurse on current allocation
+            for node in intersection: #at this stage, we have to check if we have already computed the payoff for this node, in which case, we don't want to count it again
+                if storePayoffCluster[0][node][p[k]] != None: # if we have already computed the payoff for taking this child
+                    continue
+                else:
+                    edge_weight = 0
+                    neighbors = list(G.neighbors(node)) # get the edge weights, don't want to double count
+                    for neighbor in neighbors: # we loop through all the neighbors and look to see if we have already accounted for this rej node
+                        print(G.get_edge_data(node, neighbor))
+                        for rejecting_nodes in G.get_edge_data(node, neighbor)['data']:
+                            if rejecting_nodes in rejecting:
+                                continue
+                            else:
+                                rejecting.append(rejecting_nodes)
+                                edge_weight += G.get_edge_data(node, neighbor)['weight']
+                print("edge weight is:", edge_weight)
+                print("node:", node, "num seeds:", p[k])
+                if p[k] == 0:
+                    continue
+                #IMPORTANT!!!!!!! If the payoff for taking the child minus the weight of the negative edge is GREATER than the payoff for leaving the child, take it
+                if storePayoffCluster[0][node][p[j]] - edge_weight >= storePayoffCluster[1][node][p[j]]:
+                #print("take child:", neighbors_list[i])
+                    sum_so_far += storePayoffCluster[0][node][p[j]] - edge_weight
+                else:
+                    sum_so_far += storePayoffCluster[1][node][p[j]]
+            # if this partition is better than maxSum, take it!
+            if sum_so_far > maxSum:
+                print(sum_so_far, "MAX SUM")
+                maxSum = sum_so_far
+                opt_allocation = allocation
+        if source == 1:
+            print("debugging")
+        
+        #populate the table for leaving source
+        storePayoffTree[j][k] = maxSum
+        j+=1
+    
+"""
 Stars and bars problem
 
 """
@@ -351,7 +447,7 @@ that share rejecting nodes
     G_cluster -> cluster graph whose edge is being labelled
     rejectingNodesDict -> rejecting node dictionary
 """
-def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
+def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False):
     print(rejectingNodeDict)
     # 
     for clusterNum, rejNodes in rejectingNodesDict.items():
@@ -361,7 +457,7 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
             else:
                 #intersection = [value for value in rejNodes if value in rejNodes2] #compute intersection
                 intersection = rejNodes.intersection(rejNodes2)
-                print("intersection is", intersection)
+                #print("intersection is", intersection)
 
                 #####   MTI: COMMENTING OUT FOR NOW. SEE COMMENT IN labelClusters(.) FUNCTION.
                 #we have to confront the situation where there are many rejecting nodes appearing in a 'line' such that we never 
@@ -376,8 +472,34 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
 
                 weight = len(intersection)
                 if weight > 0:  
-                    G_cluster.add_edge(clusterNum, clusterNum2, weight=weight)
-                    print("intersection between nodes ", clusterNum, clusterNum2, "is:", intersection, "of weight", weight)
+                    G_cluster.add_edge(clusterNum, clusterNum2, weight=weight, data=intersection)
+                    #print("intersection between nodes ", clusterNum, clusterNum2, "is:", intersection, "of weight", weight)
+                if removeCycles:
+                    try:
+                        while len(nx.find_cycle(G_cluster)) > 0:
+                            print("staring while")
+                            cycle = nx.find_cycle(G_cluster)
+                            print("cycle was found in graph, oh no", cycle)
+                            rej_nodes = []
+                            for edge in cycle:
+                                removed = False
+                                data = G_cluster.get_edge_data(edge[0], edge[1])['data']
+                                #print("rejecting node is", data)
+                                if len(data) == 1:
+                                    for node in data:
+                                        if node in rej_nodes:
+                                            print(rej_nodes)
+                                            G_cluster.remove_edge(edge[0], edge[1])
+                                            print("already saw" , node ," so removed edge: ", edge[0], edge[1])
+                                            removed = True
+                                        else:
+                                            rej_nodes.append(node)
+                                if removed:
+                                    break
+
+                    except nx.exception.NetworkXNoCycle:
+                        print("no cycle between nodes", clusterNum, clusterNum2,)
+                        pass
     components = nx.algorithms.components.connected_components(G_cluster)
     print("Connected components: ")
     prev = -1
@@ -389,6 +511,7 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict):
             continue
         else:
             G_cluster.add_edge(prev[0], list(comp)[0], weight=0) #add arbitrary weight
+    
 
 """
 Here, we read in the file from SNAP, and read it line by line. Each line is composed of the edges (u,v) as well as the 
@@ -396,7 +519,7 @@ time stamp for creating the graph
 returns a graph of college students connected by edges, with no attributes
 """
 def college_Message():
-    fh=open("CollegeMsg.txt", encoding='utf=8') # use utf-8 encoding
+    fh=open("CollegeMsg.txt", 'w',encoding='utf=8') # use utf-8 encoding
     G=fh.readlines()
     G_College_Msg = nx.Graph()
     for i in G: #iterate through (i,j) pairs, adding edges to graph
@@ -425,19 +548,9 @@ and build a clustered graph based on that tree.
 
 """
 def testOriginaltoCluster(n, threshold):
-    G_test = nx.random_tree(n)
+    G_test = nx.full_rary_tree(6,n)
     setAllNodeAttributes(G_test)
-    G_cluster = buildClusteredSet(G_test, threshold)
-
-    f = open("make_matrix_info.txt", "w+")
-    f.write("cluster dictionary:" + str(clusterDict) + "\n")
-    f.write("rej node dictionary: " + str(rejectingNodeDict) + "\n")
-    f.write("edge data:" + str(G_cluster.edges.data()) + "\n")
-    f.write("node data:" + str(G_cluster.nodes.data()) + "\n")
-    f.close()
-    clearVisitedNodesAndDictionaries(G_cluster)
-    makeMatrix(G_cluster, G_cluster.number_of_nodes())
-
+    G_cluster, G_cluster2 = buildClusteredSet(G_test, threshold)
     color_map = []
     for nodeID in G_test.nodes():
         if G_test.nodes[nodeID]['criticality'] >= threshold:
@@ -446,8 +559,33 @@ def testOriginaltoCluster(n, threshold):
             color_map.append('green')
     # graph original tree
     plt.figure(1)
-    nx.draw_networkx(G_test, node_color = color_map, pos=nx.spring_layout(G_test), arrows=False, with_labels=True)
-    return G_cluster
+    #nx.draw(G_test, pos=nx.spring_layout(G_test))
+    nx.draw(G_test, node_color = color_map, pos=nx.spring_layout(G_test), arrows=False, with_labels=True)
+    plt.figure(2)
+    #nx.draw(G_cluster, pos=nx.spring_layout(G_cluster))
+    nx.draw(G_cluster, pos=nx.spring_layout(G_cluster),with_labels=True)
+    edge_labels = nx.get_edge_attributes(G_cluster,'data')
+    nx.draw_networkx_edge_labels(G_cluster, pos=nx.spring_layout(G_cluster), edge_labels=edge_labels)
+    tree_decomp = None
+    try:
+        nx.find_cycle(G_cluster2)
+        print("cycle was found in graph. printing tree decomposition information")
+        tree_decomp = treeDecompPlayground(G_cluster2)
+        #return
+    except nx.exception.NetworkXNoCycle:
+        print("no cycle found in graph")
+        pass
+    
+    #print("cycle?", nx.find_cycle(G_cluster))
+    f = open("make_matrix_info.txt", "w+")
+    f.write("cluster dictionary:" + str(clusterDict) + "\n")
+    f.write("rej node dictionary: " + str(rejectingNodeDict) + "\n")
+    f.write("edge data:" + str(G_cluster.edges.data()) + "\n")
+    f.write("node data:" + str(G_cluster.nodes.data()) + "\n")
+    f.close()
+    clearVisitedNodesAndDictionaries(G_cluster)
+    makeMatrix(G_cluster2, G_cluster2.number_of_nodes())
+    return G_cluster, G_cluster2, tree_decomp
 
 """
 Driver function for running dynamic programming
@@ -457,11 +595,11 @@ Driver function for running dynamic programming
     k --> number of seeds to pick
 """
 def runRecursiveDP(G, k):
-    makeMatrix(G, G.number_of_nodes())
+    #makeMatrix(G, G.number_of_nodes())
 
     storePayoff = [ [ [None] * (k+1) for _ in range(G.number_of_nodes())] for _ in range(2)]
+
     witness = [ [ [None] * (k+1) for _ in range(G.number_of_nodes())] for _ in range(2)]
-    #tree = nx.bfs_tree(G, 0)
     nodes_tup = sorted(G.degree, key=lambda x: x[1], reverse=True) #sort by highest degree node
     print("root is", nodes_tup[0][0]) #take top degree node as root
     root = nodes_tup[0][0]
@@ -469,12 +607,18 @@ def runRecursiveDP(G, k):
     recursive_DP(G, tree, k, root, storePayoff, witness)
     print("best payoff root", storePayoff[0][root][k])
     print("best payoff no root",storePayoff[1][root][k])
-
-    #print("payoff test DP is: ", test1)
-    #print("payoff subtree DP is:", maxval, "with seeds: ", seeds)
     clearVisitedNodesAndDictionaries(G)
 
-
+def runTreeDecompDP(G, tree_decomp, k):
+    storePayoffCluster = [ [ [None] * (k+1) for _ in range(G.number_of_nodes())] for _ in range(2)]
+    storePayoffTree = [ [ [None] * (k+1) for _ in range(tree_decomp.number_of_nodes())]]
+    nodes_tup = sorted(tree_decomp.degree, key=lambda x: x[1], reverse=True) #sort by highest degree node
+    print("root is", nodes_tup[0][0]) #take top degree node as root
+    root = nodes_tup[0][0]
+    tree = nx.bfs_tree(tree_decomp, root)
+    for node in tree.nodes():
+        print(node)
+    tree_decomp_DP(G, tree, k, root, storePayoffCluster, storePayoffTree, [])
 
 #clear dictionaries for next graph to test
 def clearVisitedNodesAndDictionaries(G):
@@ -482,22 +626,48 @@ def clearVisitedNodesAndDictionaries(G):
     rejectingNodeDict.clear()
     clusterDict.clear()
 
+def treeDecompPlayground(G):
+    tree_decomp_graph = treewidth_min_degree(G)
+    tree_decomp = tree_decomp_graph[1]
+    print("tree decomposition edges:\n", nx.edges(tree_decomp))
+    return tree_decomp
+
 #main function, used for calling things
 def main():
-    #G = testOriginaltoCluster(50, 0.7)
+    #G2 is the graph with cycles, if they exist
+    G, G2, tree_decomp = testOriginaltoCluster(30, 0.5)
+    # if G is None:
+    #    print("try again")
+     #   plt.show()
+      #  return
    # G = college_Message()
-    G = createClusterGraph(15, 20)
-    runRecursiveDP(G, 5)
-    pos = nx.spring_layout(G)
-    node_labels = nx.get_node_attributes(G,'weight')
+    #G2 = createClusterGraph(15, 20)
+    runRecursiveDP(G, 10)
+    pos = nx.spring_layout(G2)
+    #node_labels = nx.get_node_attributes(G2,'weight')
 
-    plt.figure(2)
-    nx.draw(G, pos)
-    nx.draw_networkx_labels(G, pos=pos, labels=node_labels)
-    #edge_labels = nx.get_edge_attributes(G,'weight')
-    nx.draw_networkx_edge_labels(G, pos=pos)
+    #treeDecompPlayground(G)
+    plt.figure(3)
+    nx.draw(G2, pos)
+    nx.draw_networkx_labels(G2, pos=pos)
+    edge_labels = nx.get_edge_attributes(G2,'data')
+    nx.draw_networkx_edge_labels(G2, pos=pos, edge_labels=edge_labels)
     plt.savefig('this.png')
     plt.show()
 
+    if tree_decomp is not None:
+        print("Attempting to do dynamic programming on our tree graph. Starting now")
+        runTreeDecompDP(G2, tree_decomp, 10)
+
+
+
 if __name__== "__main__":
   main()
+
+
+"""
+We would have an optimal result for general graph in exponential time
+Heuristic that runs fast but can work on any graph
+
+Tree decomposition presentation after fall break--> 
+"""
