@@ -474,7 +474,38 @@ def runRecursiveDP(G, k):
     #print("payoff subtree DP is:", maxval, "with seeds: ", seeds)
     clearVisitedNodesAndDictionaries(G)
 
+'''
+Brute force algorithm used to check if tree decomposition is working properly
 
+@params:
+    G --> the cluster graph we are seeding from
+    k --> the number of clusters we are seeding
+    debug --> do (or not) debug print statments (will delete these later bc makes code look messy, but left for now)
+@returns:
+    best_payoff --> payoff of optimal k seed set
+'''
+def bruteForce(G, k, debug):
+    combinations = list(itertools.combinations(G.nodes(), k)) # all possible combinations n choose k
+    best_payoff = 0      
+    for combo in combinations:
+        temp_set_negative_edges = set() # set used to prevent double counting
+        payoff = 0
+        for node in combo:
+            if debug: print('in node',node, 'val', G.nodes[node]['weight'])
+            edges = G.edges(node) # all neighbors of node
+            payoff += G.nodes[node]['weight']
+            if debug: print('\tupdated payoff',payoff)
+            for edge in edges: # subtracting edges from payoff (no repeats)
+                if debug: print('\tedge',edge, 'weight', G.get_edge_data(node, edge[1])['weight'])
+                is_repeat = edge in temp_set_negative_edges or (edge[1],edge[0]) in temp_set_negative_edges
+                if not(is_repeat):
+                    if edge[0] > edge[1]: temp_set_negative_edges.add(edge)  
+                    else: temp_set_negative_edges.add((edge[1],edge[0]))
+                    payoff = payoff - G.get_edge_data(node, edge[1])['weight']
+                    if debug: print('\tupdated payoff',payoff)
+        if (payoff > best_payoff): best_payoff = payoff
+        if debug: print('selected nodes',combo,'negative edges',temp_set_negative_edges,'total payoff',payoff)
+    return(best_payoff)
 
 #clear dictionaries for next graph to test
 def clearVisitedNodesAndDictionaries(G):
@@ -488,6 +519,7 @@ def main():
    # G = college_Message()
     G = createClusterGraph(15, 20)
     runRecursiveDP(G, 5)
+    print('best payoff, brute force',bruteForce(G,5,False))
     pos = nx.spring_layout(G)
     node_labels = nx.get_node_attributes(G,'weight')
 
