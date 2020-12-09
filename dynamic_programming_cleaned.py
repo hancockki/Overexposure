@@ -158,8 +158,6 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
 """
 From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled
 from the (arbitrary) canonical node in its cluster.
-We then select a seed set of up to (not always, depending on the composition of the graph) k source nodes.
-We select the k source clusters with the highest accepting degree, implemented by sorting a list of tuples.
 """
 def buildClusteredSet(G, threshold, thirdAlgorithm=False):
 
@@ -179,7 +177,6 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
             make_Cluster_node(G_cluster, clusterCount, summedNeighbors[0])
             make_Cluster_node(G_cluster2, clusterCount, summedNeighbors[0])
             clusterCount += 1
-    #Choose up-to-k
     
     #MTI: Decrement the cluster weight by the number of rejecting nodes that are exclusive to a cluster
     for clusterNum, rejNodes in rejectingNodeDict.items():
@@ -349,6 +346,8 @@ Here we are running dynamic programming recursively to choose the best k cluster
     source --> the starting bag in the tree decomposition (highest degree)
     storePayoff --> the payoff matrix
     rejecting --> used to keep track of which rejecting nodes we have accounted for already
+
+try doing all subsets of nodes in the bag --> 
 """
 def tree_decomp_DP(G, tree, k, source, storePayoffCluster, storePayoffTree, rejecting):
     #TRUE is 0 and FALSE is 1 for storePayoff
@@ -425,7 +424,7 @@ def tree_decomp_DP(G, tree, k, source, storePayoffCluster, storePayoffTree, reje
         #populate the table for leaving source
         storePayoffTree[j][k] = maxSum
         j+=1
-    
+
 """
 Stars and bars problem
 
@@ -545,7 +544,6 @@ and build a clustered graph based on that tree.
 
 @returns:
     G_cluster -> the cluster graph created
-
 """
 def testOriginaltoCluster(n, threshold):
     G_test = nx.full_rary_tree(6,n)
@@ -609,7 +607,6 @@ def runRecursiveDP(G, k):
     print("best payoff no root",storePayoff[1][root][k])
     clearVisitedNodesAndDictionaries(G)
 
-<<<<<<< HEAD
 def runTreeDecompDP(G, tree_decomp, k):
     storePayoffCluster = [ [ [None] * (k+1) for _ in range(G.number_of_nodes())] for _ in range(2)]
     storePayoffTree = [ [ [None] * (k+1) for _ in range(tree_decomp.number_of_nodes())]]
@@ -620,7 +617,6 @@ def runTreeDecompDP(G, tree_decomp, k):
     for node in tree.nodes():
         print(node)
     tree_decomp_DP(G, tree, k, root, storePayoffCluster, storePayoffTree, [])
-=======
 '''
 Brute force algorithm used to check if tree decomposition is working properly
 
@@ -653,7 +649,6 @@ def bruteForce(G, k, debug):
         if (payoff > best_payoff): best_payoff = payoff
         if debug: print('selected nodes',combo,'negative edges',temp_set_negative_edges,'total payoff',payoff)
     return(best_payoff)
->>>>>>> d7eafdf19470a6db8ddcf802983c2304f8cdfab0
 
 #clear dictionaries for next graph to test
 def clearVisitedNodesAndDictionaries(G):
@@ -676,7 +671,6 @@ def main():
      #   plt.show()
       #  return
    # G = college_Message()
-<<<<<<< HEAD
     #G2 = createClusterGraph(15, 20)
     runRecursiveDP(G, 10)
     pos = nx.spring_layout(G2)
@@ -688,7 +682,6 @@ def main():
     nx.draw_networkx_labels(G2, pos=pos)
     edge_labels = nx.get_edge_attributes(G2,'data')
     nx.draw_networkx_edge_labels(G2, pos=pos, edge_labels=edge_labels)
-=======
     G = createClusterGraph(15, 20)
     runRecursiveDP(G, 5)
     print('best payoff, brute force',bruteForce(G,5,False))
@@ -700,7 +693,6 @@ def main():
     nx.draw_networkx_labels(G, pos=pos, labels=node_labels)
     #edge_labels = nx.get_edge_attributes(G,'weight')
     nx.draw_networkx_edge_labels(G, pos=pos)
->>>>>>> d7eafdf19470a6db8ddcf802983c2304f8cdfab0
     plt.savefig('this.png')
     plt.show()
 
