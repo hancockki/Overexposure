@@ -546,7 +546,7 @@ and build a clustered graph based on that tree.
     G_cluster -> the cluster graph created
 """
 def testOriginaltoCluster(n, threshold):
-    G_test = nx.full_rary_tree(6,n)
+    G_test = nx.full_rary_tree(3,n)
     setAllNodeAttributes(G_test)
     G_cluster, G_cluster2 = buildClusteredSet(G_test, threshold)
     color_map = []
@@ -584,6 +584,7 @@ def testOriginaltoCluster(n, threshold):
     clearVisitedNodesAndDictionaries(G_cluster)
     makeMatrix(G_cluster2, G_cluster2.number_of_nodes())
     return G_cluster, G_cluster2, tree_decomp
+    
 
 """
 Driver function for running dynamic programming
@@ -650,6 +651,14 @@ def bruteForce(G, k, debug):
         if debug: print('selected nodes',combo,'negative edges',temp_set_negative_edges,'total payoff',payoff)
     return(best_payoff)
 
+def print_info(G):
+    print("Edges:", nx.edges(G))
+    print("Nodes:", nx.nodes(G))
+    data = G.edges.data()
+    print(data)
+    for item in data:
+        print("Edge between cluster", item[0], "and cluster", item[1], "has weight", item[2]['weight'], " and is connected to rejecting node: ", item[2]['data'][0] )
+
 #clear dictionaries for next graph to test
 def clearVisitedNodesAndDictionaries(G):
     setVisitedFalse(G)
@@ -665,7 +674,7 @@ def treeDecompPlayground(G):
 #main function, used for calling things
 def main():
     #G2 is the graph with cycles, if they exist
-    G, G2, tree_decomp = testOriginaltoCluster(30, 0.5)
+    G, G2, tree_decomp = testOriginaltoCluster(12, 0.5)
     # if G is None:
     #    print("try again")
      #   plt.show()
@@ -674,7 +683,7 @@ def main():
     #G2 = createClusterGraph(15, 20)
     runRecursiveDP(G, 10)
     pos = nx.spring_layout(G2)
-    #node_labels = nx.get_node_attributes(G2,'weight')
+    node_labels = nx.get_node_attributes(G2,'weight')
 
     #treeDecompPlayground(G)
     plt.figure(3)
