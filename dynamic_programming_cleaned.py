@@ -556,14 +556,15 @@ def testOriginaltoCluster(n, threshold):
         else:
             color_map.append('green')
     # graph original tree
-    plt.figure(1)
+    plt.figure('original network')
     #nx.draw(G_test, pos=nx.spring_layout(G_test))
     nx.draw(G_test, node_color = color_map, pos=nx.spring_layout(G_test), arrows=False, with_labels=True)
-    plt.figure(2)
+    plt.figure('remove cycles from cluster')
     #nx.draw(G_cluster, pos=nx.spring_layout(G_cluster))
-    nx.draw(G_cluster, pos=nx.spring_layout(G_cluster),with_labels=True)
+    layout = nx.spring_layout(G_cluster)
+    nx.draw(G_cluster, pos=layout,with_labels=True)
     edge_labels = nx.get_edge_attributes(G_cluster,'data')
-    nx.draw_networkx_edge_labels(G_cluster, pos=nx.spring_layout(G_cluster), edge_labels=edge_labels)
+    nx.draw_networkx_edge_labels(G_cluster, pos=layout, edge_labels=edge_labels)
     tree_decomp = None
     try:
         nx.find_cycle(G_cluster2)
@@ -618,6 +619,7 @@ def runTreeDecompDP(G, tree_decomp, k):
     for node in tree.nodes():
         print(node)
     tree_decomp_DP(G, tree, k, root, storePayoffCluster, storePayoffTree, [])
+
 '''
 Brute force algorithm used to check if tree decomposition is working properly
 
@@ -629,27 +631,112 @@ Brute force algorithm used to check if tree decomposition is working properly
     best_payoff --> payoff of optimal k seed set
 '''
 def bruteForce(G, k, debug):
-    combinations = list(itertools.combinations(G.nodes(), k)) # all possible combinations n choose k
-    best_payoff = 0      
+    combinations = []
+    for i in range(k):
+        i += 1
+        combinations.extend(list(itertools.combinations(G.nodes(), i))) # all possible combinations n choose k
+    if debug: print("posible combinations:",combinations)
+    print('G.nodes.data():',G.nodes.data())
+    print('G.edges.data():',G.edges.data())
+    best_payoff = 0 # record of best payoff   
+    best_payoff_selection = -1 # record of which clusters produce best payoff
     for combo in combinations:
-        temp_set_negative_edges = set() # set used to prevent double counting
+        set_negative_edges = set() # set used to prevent double counting an edge
+        set_reject_nodes = set() # set used to prevent reject nodes from being double counted
         payoff = 0
         for node in combo:
             if debug: print('in node',node, 'val', G.nodes[node]['weight'])
-            edges = G.edges(node) # all neighbors of node
             payoff += G.nodes[node]['weight']
             if debug: print('\tupdated payoff',payoff)
-            for edge in edges: # subtracting edges from payoff (no repeats)
-                if debug: print('\tedge',edge, 'weight', G.get_edge_data(node, edge[1])['weight'])
-                is_repeat = edge in temp_set_negative_edges or (edge[1],edge[0]) in temp_set_negative_edges
-                if not(is_repeat):
-                    if edge[0] > edge[1]: temp_set_negative_edges.add(edge)  
-                    else: temp_set_negative_edges.add((edge[1],edge[0]))
-                    payoff = payoff - G.get_edge_data(node, edge[1])['weight']
+            for neighbor in G.neighbors(node): # subtracting edges from payoff (no repeats)
+                if node > neighbor:
+                    edge = (neighbor, node)
+                else:
+                    edge = (node, neighbor)
+                if debug: print('\tedge',edge, 'weight', G.edges[edge]['weight'])
+                if edge not in set_negative_edges:
+                    set_negative_edges.add(edge)
+                    try:
+                        reject_node_set = G.edges[edge]['data']
+                        reject_node = reject_node_set.pop()
+                        reject_node_set.add(reject_node)
+                        if reject_node in set_reject_nodes: # don't subtract from payoff if rejecting node already been counted
+                            payoff += 1
+                        else:
+                            set_reject_nodes.add(reject_node)
+                    except:
+                        pass
+                    payoff = payoff - G.edges[edge]['weight']
                     if debug: print('\tupdated payoff',payoff)
-        if (payoff > best_payoff): best_payoff = payoff
-        if debug: print('selected nodes',combo,'negative edges',temp_set_negative_edges,'total payoff',payoff)
+        if (payoff > best_payoff):
+            best_payoff = payoff
+            best_payoff_selection = combo
+        if debug: print('selected nodes',combo,'negative edges',set_negative_edges,'total payoff',payoff)
+    print('clusters selected for best payoff:',best_payoff_selection)
     return(best_payoff)
+
+
+'''
+Used to record graph data in a text file. These files can be used in conjuntion with create_graph_from_output.py to translate
+this data into a graph
+
+@params:
+    G           --> the graph that is being saved
+    filename    --> the name of the file that the date will be recorded in. Use '' if you want to use the default filename
+'''
+def record_graph_info(G, filename):
+    if filename == '':
+        filename = "last_generated_graph.txt"
+    graph_info = "G.nodes.data(): " + str(G.nodes.data()) + "\nG.edges.data(): " + str(G.edges.data())
+    record_graph_input = open("graph_code_generation\\" + filename ,"w+")
+    record_graph_input.write(graph_info)
+    record_graph_input.close()
+
+'''
+Function to recreate a graph that has been previously generated.
+This is NOT intended to be hard coded! Use the create_graph_from_output.py generate the graph code and paste the generated
+code into this function
+
+@returns:
+    G --> Graph created by this code
+'''
+def recreateGraph():
+	G = nx.Graph()
+
+	G.add_nodes_from(range(7))
+
+	G.nodes[0]['weight'] = -1
+	G.nodes[1]['weight'] = 0
+	G.nodes[2]['weight'] = 0
+	G.nodes[3]['weight'] = 1
+	G.nodes[4]['weight'] = 1
+	G.nodes[5]['weight'] = 1
+	G.nodes[6]['weight'] = 1
+
+	G.nodes[0]['visited'] = False
+	G.nodes[1]['visited'] = False
+	G.nodes[2]['visited'] = False
+	G.nodes[3]['visited'] = False
+	G.nodes[4]['visited'] = False
+	G.nodes[5]['visited'] = False
+
+	G.add_edge(0,1)
+	G.edges[(0,1)]['weight'] = 0
+	G.add_edge(0,3)
+	G.edges[(0,3)]['weight'] = 0
+	G.add_edge(0,5)
+	G.edges[(0,5)]['weight'] = 0
+	G.add_edge(1,2)
+	G.edges[(1,2)]['weight'] = 1
+	G.add_edge(3,4)
+	G.edges[(3,4)]['weight'] = 1
+	G.add_edge(5,6)
+	G.edges[(5,6)]['weight'] = 1
+
+	G.edges[(1,2)]['data'] = {1}
+	G.edges[(3,4)]['data'] = {2}
+	G.edges[(5,6)]['data'] = {4}
+	return G
 
 def print_info(G):
     print("Edges:", nx.edges(G))
@@ -673,46 +760,61 @@ def treeDecompPlayground(G):
 
 #main function, used for calling things
 def main():
-    #G2 is the graph with cycles, if they exist
-    G, G2, tree_decomp = testOriginaltoCluster(12, 0.5)
-    # if G is None:
+    #G_w_cyc is the graph with cycles, if they exist
+    num_nodes = 20
+    thresh = 0.5
+    k = 3
+    
+    G_no_cyc, G_w_cyc, tree_decomp = testOriginaltoCluster(num_nodes, thresh) #use for generate cases
+    #G_no_cyc = recreateGraph()
+    #G_w_cyc = recreateGraph()
+    
+    # if G_no_cyc is None:
     #    print("try again")
      #   plt.show()
       #  return
-   # G = college_Message()
-    #G2 = createClusterGraph(15, 20)
-    runRecursiveDP(G, 10)
-    pos = nx.spring_layout(G2)
-    node_labels = nx.get_node_attributes(G2,'weight')
+   # G_no_cyc = college_Message()
+    #G_w_cyc = createClusterGraph(15, 20)
+    #print('\nRecursive DP no cycles')
+    #runRecursiveDP(G_no_cyc, k)
 
-    #treeDecompPlayground(G)
-    plt.figure(3)
-    nx.draw(G2, pos)
-    nx.draw_networkx_labels(G2, pos=pos)
-    edge_labels = nx.get_edge_attributes(G2,'data')
-    nx.draw_networkx_edge_labels(G2, pos=pos, edge_labels=edge_labels)
-    G = createClusterGraph(15, 20)
-    runRecursiveDP(G, 5)
-    print('best payoff, brute force',bruteForce(G,5,False))
-    pos = nx.spring_layout(G)
-    node_labels = nx.get_node_attributes(G,'weight')
+    print('\nRecursive DP cycles')
+    runRecursiveDP(G_w_cyc, k)
 
-    plt.figure(2)
-    nx.draw(G, pos)
-    nx.draw_networkx_labels(G, pos=pos, labels=node_labels)
-    #edge_labels = nx.get_edge_attributes(G,'weight')
-    nx.draw_networkx_edge_labels(G, pos=pos)
+    print('\nBruteforce cycles')
+    print('best payoff, brute force',bruteForce(G_w_cyc,k,False))
+
+    record_graph_info(G_w_cyc, '')
+
+    #treeDecompPlayground(G_no_cyc)
+    plt.figure('normal cluster graph')
+    pos = nx.spring_layout(G_w_cyc)
+    nx.draw(G_w_cyc, pos)
+    node_labels = nx.get_node_attributes(G_w_cyc,'weight') # make lables weights instead of just name
+    nx.draw_networkx_labels(G_w_cyc, pos=pos, labels=node_labels)
+    edge_labels = nx.get_edge_attributes(G_w_cyc,'data') # edge lables rejecting node
+    nx.draw_networkx_edge_labels(G_w_cyc, pos=pos, edge_labels=edge_labels)
+
+    # G_rando = createClusterGraph(num_nodes, 20)
+    # runRecursiveDP(G_rando, k)
+    # print('best payoff, brute force',bruteForce(G_rando,k,False))
+    # pos = nx.spring_layout(G_rando)
+    # node_labels = nx.get_node_attributes(G_rando,'weight')
+
+    # plt.figure('random cluster')
+    # nx.draw(G_rando, pos)
+    # nx.draw_networkx_labels(G_rando, pos=pos, labels=node_labels)
+    # edge_labels = nx.get_edge_attributes(G_rando,'weight')
+    # nx.draw_networkx_edge_labels(G_rando, pos=pos)
     plt.savefig('this.png')
     plt.show()
 
     if tree_decomp is not None:
         print("Attempting to do dynamic programming on our tree graph. Starting now")
-        runTreeDecompDP(G2, tree_decomp, 10)
-
-
+        runTreeDecompDP(G_w_cyc, tree_decomp, 10)
 
 if __name__== "__main__":
-  main()
+    main()
 
 
 """
@@ -721,3 +823,4 @@ Heuristic that runs fast but can work on any graph
 
 Tree decomposition presentation after fall break--> 
 """
+# %%
