@@ -1,0 +1,36 @@
+	G = nx.Graph()
+
+	G.add_nodes_from(range(6))
+
+	G.nodes[0]['weight'] = 1
+	G.nodes[1]['weight'] = 2
+	G.nodes[2]['weight'] = 1
+	G.nodes[3]['weight'] = 1
+	G.nodes[4]['weight'] = 1
+	G.nodes[5]['weight'] = 1
+
+	G.nodes[0]['visited'] = False
+	G.nodes[1]['visited'] = False
+	G.nodes[2]['visited'] = False
+	G.nodes[3]['visited'] = False
+	G.nodes[4]['visited'] = False
+
+	G.add_edge(0,1)
+	G.edges[(0,1)]['weight'] = 1
+	G.add_edge(0,2)
+	G.edges[(0,2)]['weight'] = 1
+	G.add_edge(0,3)
+	G.edges[(0,3)]['weight'] = 0
+	G.add_edge(3,4)
+	G.edges[(3,4)]['weight'] = 1
+	G.add_edge(3,5)
+	G.edges[(3,5)]['weight'] = 1
+	G.add_edge(4,5)
+	G.edges[(4,5)]['weight'] = 1
+
+	G.edges[(0,1)]['data'] = {1}
+	G.edges[(0,2)]['data'] = {3}
+	G.edges[(3,4)]['data'] = {5}
+	G.edges[(3,5)]['data'] = {5}
+	G.edges[(4,5)]['data'] = {5}
+	return G

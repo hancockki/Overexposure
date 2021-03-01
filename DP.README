@@ -1,9 +1,0 @@
-The purpose of this problem is to analyze overexposure in viral marketing, which is essentially when we do not consider the case
-that a product is viewed negatively by agents.
-Our model asks two questions:
-
-How can we compute the best seed set in the case of overexposure, for a finite number of seeds?
-How accurate is this seed set?
-
-The model is limited, with the following:
-
