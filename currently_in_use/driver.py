@@ -11,11 +11,11 @@ def runTests():
     G = cc.createClusterGraph(20, 10)
     #compute payoff for greedy DP
     max_val_greedyDP = dp.greedyDP(G, G.number_of_nodes(), 3)
-    sys.stdout = open("currently_in_use/results.txt", "w")
+    sys.stdout = open("currently_in_use/results_details.txt", "w")
     #print info about the graph
     print_info(G)
     print("\nGreedy DP Payoff: ", max_val_greedyDP)
-
+    
     #compute payoff for most basic greedy algorithm
     greedy_seedset, payoff = greedy.kHighestClusters(G, 3)
     print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", payoff)
@@ -24,6 +24,9 @@ def runTests():
     payoff_root, payoff_no_root = dp.runRecursiveDP(G, 3)
     print("Recursive DP payoff: \n Root: ", payoff_root, "\n No Root: ", payoff_no_root)
     sys.stdout.close()
+    with open('currently_in_use/compare_results.txt', 'a') as results:
+        results.write('\n'+ str(max_val_greedyDP[0]) + '\t\t\t' + str(payoff) + '\t\t\t' + str(payoff_root) + ' ' + str(payoff_no_root))
+    results.close()
     #print graph
     plt.figure(2)
     pos = nx.spring_layout(G)
