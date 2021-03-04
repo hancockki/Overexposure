@@ -1,0 +1,25 @@
+Edge between 0 5  Weight:  0
+Edge between 0 8  Weight:  5
+Edge between 0 1  Weight:  0
+Edge between 1 14  Weight:  1
+Edge between 1 17  Weight:  2
+Edge between 1 2  Weight:  6
+Edge between 2 16  Weight:  1
+Edge between 2 15  Weight:  2
+Edge between 3 15  Weight:  2
+Edge between 3 18  Weight:  2
+Edge between 4 7  Weight:  0
+Edge between 4 13  Weight:  1
+Edge between 4 19  Weight:  2
+Edge between 6 10  Weight:  4
+Edge between 9 17  Weight:  0
+Edge between 10 18  Weight:  5
+Edge between 10 19  Weight:  6
+Edge between 11 14  Weight:  1
+Edge between 12 19  Weight:  6
+
+Greedy DP Payoff:  (22, [0, 9, 13])
+Greedy Approach Seeds Chosen: [(10, 10), (10, 9), (10, 2)]  with payoff:  6
+Recursive DP payoff: 
+ Root:  14 
+ No Root:  22

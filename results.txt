@@ -1,0 +1,11 @@
+Greedy DP Payoff:  (18, [10, 0, 14])
+[(10, 6), (10, 3), (8, 14), (7, 13), (7, 5), (7, 4), (6, 18), (6, 0), (5, 17), (5, 16), (5, 11), (5, 9), (5, 8), (4, 15), (4, 10), (3, 12), (3, 7), (3, 1), (2, 19), (1, 2)]
+didn't double count!
+Greedy Approach Seeds Chosen: [(10, 6), (10, 3), (8, 14)]  with payoff:  17
+root is 18
+debugging
+debugging
+debugging
+Recursive DP payoff: 
+ Root:  10 
+ No Root:  18
