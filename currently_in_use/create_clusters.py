@@ -363,5 +363,5 @@ def showOriginalGraph(G, c):
             color_map.append('red')
         else:
             color_map.append('green')
-    plt.figure(1)
+    plt.figure('original network')
     nx.draw_networkx(G, node_color = color_map, pos=nx.spring_layout(G, iterations=1000), arrows=False, with_labels=True)
