@@ -1,6 +1,7 @@
 import networkx as nx
 import itertools
 import create_clusters as cc
+import brute_force as bf
 
 def computeNegPayoff(G, nodeNum):
     nodeWeight = G.nodes[nodeNum]['weight']
@@ -11,7 +12,6 @@ def computeNegPayoff(G, nodeNum):
         nodeWeight -= add
     #print("node weight is:", nodeWeight)
     return nodeWeight
-
 
 def greedyDP(G, i, k): #doesn't consider subtrees
     #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster

@@ -47,6 +47,7 @@ def createClusterGraph(n, maxWeight):
         for neighbor in nx.neighbors(G, i):
             rand2 = random.randint(0,rand)
             G.add_edge(i, neighbor, weight=rand2)
+    print("created cluster graph")
     return G
 
 #clear dictionaries for next graph to test
@@ -209,26 +210,33 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
 
 
 def makeMatrix(G, n):
-    f = open("make_matrix.txt", "a")
-    f.write("\n Next test: \n")
+    f = open("currently_in_use/make_matrix.txt", "w")
     matrix = [[0] * n for _ in range(n)] #store payoff
-    weight = nx.get_node_attributes(G, name='weight')
+    node_weights = nx.get_node_attributes(G, name='weight')
     #print("weight of nodes is:", weight)
-    edge = nx.get_edge_attributes(G, 'weight')
-    #print("weight of edges is:", edge)
-    for key, value in edge.items():
+    edge_weights = nx.get_edge_attributes(G, 'weight')
+    #print("weight of edges is:", edge_weights)
+    nodes = []
+    edges = [[] for _ in range(n)]
+    for key, value in edge_weights.items():
+        if value == 0:
+            continue
         matrix[key[0]][key[1]] = value
         matrix[key[1]][key[0]] = value
-    for key, value in weight.items():
+        edges[key[0]].append(value)
+        edges[key[1]].append(value)
+    for key, value in node_weights.items():
         matrix[key][key] = value
+        nodes.append(value)
     for i in range(n):
         fullStr = ','.join([str(elem) for elem in matrix[i] ])
-        f.write("[" + fullStr + "]" + "\n")
+        f.write(fullStr + "\n")
     f.close()
-    with open('make_matrix.csv', mode='w', newline='') as make_matrix:
+    with open('currently_in_use/make_matrix.csv', mode='w', newline='') as make_matrix:
         matrix_writer = csv.writer(make_matrix, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for i in range(n):
             matrix_writer.writerow(matrix[i])
+    return nodes, edges
 
 
 

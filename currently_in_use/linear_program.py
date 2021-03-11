@@ -1,24 +1,35 @@
-import pulp
+from pulp import *
 import create_clusters as cc
 
-def lp_setup(G):
+def lp_setup(G, k):
     """
     Set up our LP based on the cluster data. We want each cluster and rejecting node to be a variable, 
     with the constraint that if you pick a cluster you must pick the rejecting nodes it is connected to.
     """
-    NODES = EDGES = range(G.number_of_nodes())
-    maximize_payoff = pulp.LpProblem("Overexposure_Maximization", pulp.LpMaximize)
-    choices = pulp.LpVariable.dicts("Choice", (NODES), cat="Integer")
-    cluster_variables = []
-    edge_variables = []
-    # loop through edge data to make our constraints for the lp
-    for edge_data in G.edges.data():
-        rej_node = edge_data[2]['weight']
-        if edge_data[0] not in cluster_variables:
-            continue
+    
+    prob = LpProblem("Overexposure", LpMaximize)       
+
+    node_weights, edge_weights = cc.makeMatrix(G, G.number_of_nodes())
+    print("Node weights:\n", node_weights, "\n", "Edge Weights:\n", edge_weights)
+
+    edges = [i for i in range(G.number_of_edges())]
+    nodes = [i  for i in range(G.number_of_nodes())]
+
+    node_vars = LpVariable.dicts("Nodes", nodes, lowBound=0, upBound=1, cat=LpInteger)
+
+    edge_vars = LpVariable.dicts("Edges", [j for j in edges], 0, 1, LpBinary)
+
+    print(edge_vars, node_vars)
+
+    #define our objective
+    prob += lpSum(node_vars[i]*node_weights[i] for i in node_vars)
+    prob += lpSum(-j*node_vars[i] for j in edge_weights[i] for i in node_vars)
+
+    #define our constraints
+    prob += lpSum(i for i in nodes) <= k
+    prob.solve()
 
 # define our LP problem
-
 """
 We want to maximize the sum of nodes minus the sum of edges for each cluster. We use a bipartite graph and ensure that
 we do not double count each edge by ensuring that once we subtract an edge once, we cannot subtract it again.
@@ -36,4 +47,22 @@ constraints:
 
 ASSUME critical node can be shared by at MOST two clusters
 Implement original linear program
-"""
+
+    with open("currently_in_use/make_matrix.txt") as constraints:
+        lines = constraints.readlines()
+        adjacency_matrix = []
+        temp = []
+        for line in lines:
+            numbers = line.strip().split(',')
+            for number in numbers:
+                temp.append(int(number))
+            adjacency_matrix.append(temp)
+            temp = []
+    constraints.close()
+    for row in constraints:
+        for column in constraints:
+            if row==column:
+                node_weights.append(row)
+            else:
+                edge_weights.append(row)
+"""      
