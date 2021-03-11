@@ -1,6 +1,7 @@
 import create_clusters as cc
 import DP_algorithms as dp
 import greedy_approx_algorithms as greedy
+import brute_force as bf
 import networkx as nx
 import matplotlib.pyplot as plt
 import sys
@@ -11,8 +12,8 @@ import linear_program as lp
 #TODO: 
 def runTests():
     #create cluster greaph
-    #G = cc.testOriginaltoCluster(20, 0.7, 3)
-    G = cc.createClusterGraph(20, 10)
+    G = cc.testOriginaltoCluster(30, 0.7, 3)
+    #G = cc.createClusterGraph(20, 10)
     #compute payoff for greedy DP
     max_val_greedyDP = dp.greedyDP(G, G.number_of_nodes(), 3)
     sys.stdout = open("currently_in_use/results_details.txt", "a")
@@ -30,7 +31,7 @@ def runTests():
 
     lp.lp_setup(G)
     sys.stdout.close()
-    with open('currently_in_use/compare_results.txt', 'a') as results:
+    with open('compare_results.txt', 'a') as results:
         results.write('\n'+ str(max_val_greedyDP[0]) + '\t\t\t' + str(payoff) + '\t\t\t' + str(payoff_root) + ' ' + str(payoff_no_root))
     results.close()
     printGraph(G)
@@ -42,10 +43,12 @@ def printGraph(G):
     nx.draw(G, pos)
 
     node_labels = nx.get_node_attributes(G,'weight')
-    nx.draw_networkx_labels(G, pos, labels = node_labels)
+    nx.draw_networkx_labels(G, pos=pos, labels=node_labels)
+    edge_labels = nx.get_edge_attributes(G,'data') # edge lables rejecting node
+    nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=edge_labels)
 
     #edge_labels = nx.get_edge_attributes(G_DP,'weight')
-    nx.draw_networkx_edge_labels(G, pos)
+    # nx.draw_networkx_edge_labels(G, pos)
     plt.savefig('this.png')
     plt.show()
 
