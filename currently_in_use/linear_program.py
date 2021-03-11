@@ -33,4 +33,7 @@ node is 1, meaning we cannot count the node more than once?
 constraints:
     if we take a cluster we must take each rejecting node it is connected to
     we cannot take the same rejecting node more than once
+
+ASSUME critical node can be shared by at MOST two clusters
+Implement original linear program
 """

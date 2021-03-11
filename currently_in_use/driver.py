@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import sys
 import linear_program as lp
 
+#TODO: allow user to type in how many nodes they want in the graph
+#TODO: timestamp each graph with when you ran it
+#TODO: 
 def runTests():
     #create cluster greaph
     #G = cc.testOriginaltoCluster(20, 0.7, 3)
@@ -50,11 +53,10 @@ def print_info(G):
     print('\nNext Test:\n')
     data = G.edges.data()
     weights = G.nodes.data('weight')
-    print('Node weights: ')
     for node in weights:
-        print("Node:", node[0], "Weight:", node[1])
+        print(node[0], node[1])
     for item in data:
-        print("Edge between", item[0], item[1], " Weight: ", item[2]['weight'])
+        print(item[0], item[1], item[2]['weight'])
 
 #main function, used for calling things
 def main():

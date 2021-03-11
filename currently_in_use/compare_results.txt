@@ -1,6 +1,2 @@
-Greedy  GreedyDP    RecursiveDP
-21			13			17 21
-18			13			10 18
-7			7			-5 7
-13			4			-1 13
-22			3			7 22
+Timestamp   Greedy  GreedyDP    RecursiveDP
+            26			22			9 26

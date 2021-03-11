@@ -1,3 +1,10 @@
+"""
+Outline important details for the file, ie what methods are most useful.
+
+"""
+
+
+
 import networkx as nx
 from networkx.algorithms import approximation as approx
 from operator import itemgetter
