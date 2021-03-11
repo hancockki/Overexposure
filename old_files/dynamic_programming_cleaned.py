@@ -409,7 +409,6 @@ def tree_decomp_DP(G, tree, k, source, storePayoffCluster, storePayoffTree, reje
                     continue
                 #IMPORTANT!!!!!!! If the payoff for taking the child minus the weight of the negative edge is GREATER than the payoff for leaving the child, take it
                 if storePayoffCluster[0][node][p[j]] - edge_weight >= storePayoffCluster[1][node][p[j]]:
-                #print("take child:", neighbors_list[i])
                     sum_so_far += storePayoffCluster[0][node][p[j]] - edge_weight
                 else:
                     sum_so_far += storePayoffCluster[1][node][p[j]]

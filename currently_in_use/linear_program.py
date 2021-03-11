@@ -1,5 +1,6 @@
 from pulp import *
 import create_clusters as cc
+import networkx as nx
 
 def lp_setup(G, k):
     """
@@ -9,27 +10,41 @@ def lp_setup(G, k):
     
     prob = LpProblem("Overexposure", LpMaximize)       
 
-    node_weights, edge_weights = cc.makeMatrix(G, G.number_of_nodes())
-    print("Node weights:\n", node_weights, "\n", "Edge Weights:\n", edge_weights)
+    #node_weights, edge_weights = cc.makeMatrix(G, G.number_of_nodes())
+    #print("Node weights:\n", node_weights, "\n", "Edge Weights:\n", edge_weights)
 
-    edges = [i for i in range(G.number_of_edges())]
-    nodes = [i  for i in range(G.number_of_nodes())]
+    edges = G.edges()
+    nodes = G.nodes()
+    node_weights = nx.get_node_attributes(G, name='weight')
+    edge_weights = nx.get_edge_attributes(G, 'weight')
+
+    print("Nodes: ", nodes)
 
     node_vars = LpVariable.dicts("Nodes", nodes, lowBound=0, upBound=1, cat=LpInteger)
-
-    edge_vars = LpVariable.dicts("Edges", [j for j in edges], 0, 1, LpBinary)
+    edge_vars = LpVariable.dicts("Edges", edges, lowBound=0, upBound=1, cat=LpInteger)
 
     print(edge_vars, node_vars)
 
     #define our objective
-    prob += lpSum(node_vars[i]*node_weights[i] for i in node_vars)
-    prob += lpSum(-j*node_vars[i] for j in edge_weights[i] for i in node_vars)
+    prob += lpSum(node_vars[i]*node_weights[i] for i in node_vars) - (lpSum(edge_weights[j]*edge_vars[j] for j in edge_vars))
 
     #define our constraints
-    prob += lpSum(i for i in nodes) <= k
-    prob.solve()
+    prob += lpSum(node_vars[i] for i in node_vars) <= k #budget
+    '''
+    define constraints based on what edges are connected to each node, don't want to double count
+    '''
+    for e in edge_vars:
+        for i in e:
+            prob += edge_vars[e] >= node_vars[i]
 
-# define our LP problem
+    # Solve the LP
+    status = prob.solve(PULP_CBC_CMD(msg=0))
+    print("Status:", status)
+
+    #Print solution
+    for var in prob.variables():
+        print(var, "=", value(var))
+    print("OPT =", value(prob.objective))
 """
 We want to maximize the sum of nodes minus the sum of edges for each cluster. We use a bipartite graph and ensure that
 we do not double count each edge by ensuring that once we subtract an edge once, we cannot subtract it again.
