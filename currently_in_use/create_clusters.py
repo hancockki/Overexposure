@@ -16,9 +16,11 @@ import csv
 global rejectingNodeDict
 global clusterDict
 global allSubsets
+global DEBUG
 rejectingNodeDict = {}
 clusterDict = {}
 allSubsets = []
+DEBUG = False # change to true if want to print debug statements
 
 # In[32]:
 
@@ -189,12 +191,12 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
     
     #MTI: Decrement the cluster weight by the number of rejecting nodes that are exclusive to a cluster
     for clusterNum, rejNodes in rejectingNodeDict.items():
-        print("rejecting nodes,", clusterNum, rejNodes)
+        if DEBUG: print("rejecting nodes,", clusterNum, rejNodes)
         rejNodes_copy = rejNodes.copy()
         for clusterNum2, rejNodes2 in rejectingNodeDict.items():
             if clusterNum != clusterNum2:
                 rejNodes_copy = rejNodes_copy - rejNodes2
-        print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
+        if DEBUG: print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
         G_cluster.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
 
     make_cluster_edge(G_cluster, G, rejectingNodeDict)    
@@ -273,7 +275,7 @@ that share rejecting nodes
     rejectingNodesDict -> rejecting node dictionary
 """
 def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False):
-    print(rejectingNodeDict)
+    if DEBUG: print(rejectingNodeDict)
     # 
     for clusterNum, rejNodes in rejectingNodesDict.items():
         for clusterNum2, rejNodes2 in rejectingNodesDict.items():
@@ -327,13 +329,13 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False)
                         print("no cycle between nodes", clusterNum, clusterNum2,)
                         pass
     components = nx.algorithms.components.connected_components(G_cluster)
-    print("Connected components: ")
+    if DEBUG: print("Connected components: ")
     prev = -1
     for comp in components:
-        print("Component: ", comp)
+        if DEBUG: print("Component: ", comp)
         if prev == -1:
             prev = list(comp)
-            print("list is", list(comp))
+            if DEBUG: print("list is", list(comp))
             continue
         else:
             G_cluster.add_edge(prev[0], list(comp)[0], weight=0) #add arbitrary weight

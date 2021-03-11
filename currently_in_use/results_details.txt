@@ -1,18 +1,17 @@
-Edge between 0 2  Weight:  1
+Edge between 0 5  Weight:  1
 Edge between 0 1  Weight:  0
-Edge between 0 3  Weight:  0
+Edge between 1 2  Weight:  1
+Edge between 1 3  Weight:  1
 Edge between 1 4  Weight:  1
-Edge between 1 5  Weight:  1
-Edge between 1 6  Weight:  1
-Edge between 1 7  Weight:  1
-Edge between 4 6  Weight:  1
-Edge between 4 7  Weight:  1
-Edge between 6 7  Weight:  1
+Edge between 2 3  Weight:  1
+Edge between 2 4  Weight:  1
+Edge between 3 4  Weight:  1
+Edge between 3 6  Weight:  1
 
-Greedy DP Payoff:  (1, [5, 0, 1])
-Greedy Approach Seeds Chosen: [(4, 1), (1, 7), (1, 6)]  with payoff:  -1
+Greedy DP Payoff:  (8, [6, 3, 0])
+Greedy Approach Seeds Chosen: [(5, 6), (5, 3), (3, 0)]  with payoff:  8
 Recursive DP payoff: 
- Root:  2 
- No Root:  1
-clusters selected for best payoff: (1, 5, 6)
-Brute Force Seeds Chosen: (1, 5, 6) with payoff: 4
+ Root:  8 
+ No Root:  10
+clusters selected for best payoff: (0, 3, 6)
+Brute Force Seeds Chosen: (0, 3, 6) with payoff: 10
