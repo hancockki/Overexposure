@@ -72,3 +72,11 @@ cluster dictionary:{0: {0}, 1: {8, 1, 4, 6}, 2: {3, 7}}
 rej node dictionary: {0: {2}, 1: {9, 2}, 2: {2, 5}}
 edge data:[(0, 1, {'weight': 1, 'data': {2}}), (0, 2, {'weight': 1, 'data': {2}}), (1, 2, {'weight': 1, 'data': {2}})]
 node data:[(0, {'weight': 1}), (1, {'weight': 3}), (2, {'weight': 1})]
+cluster dictionary:{0: {0, 4, 6, 7, 8}, 1: {1, 5}, 2: {2}}
+rej node dictionary: {0: {3}, 1: {9, 3}, 2: {9}}
+edge data:[(0, 1, {'weight': 1, 'data': {3}}), (1, 2, {'weight': 1, 'data': {9}})]
+node data:[(0, {'weight': 5}), (1, {'weight': 2}), (2, {'weight': 1})]
+cluster dictionary:{0: {1, 2, 3, 4, 6, 7, 8, 9}, 1: {5}}
+rej node dictionary: {0: {0}, 1: {0}}
+edge data:[(0, 1, {'weight': 1, 'data': {0}})]
+node data:[(0, {'weight': 8}), (1, {'weight': 1})]

@@ -44,7 +44,7 @@ def runTests():
     max_weight = 5
     #G = cc.testOriginaltoCluster(num_nodes, criticality, k)
     #G = cc.createClusterGraph(num_nodes, max_weight)
-    G = cff.create_cluster_graph(FILE_DIRECTORY_PREFIX + "cluster_graph_details.txt")
+    G = cff.create_from_file(FILE_DIRECTORY_PREFIX + "cluster_graph_details.txt")
     #compute payoff for greedy DP
     max_val_greedyDP = dp.greedyDP(G, G.number_of_nodes(), k)
     with open(FILE_DIRECTORY_PREFIX + "results_details.txt", "a") as results_details:
@@ -107,10 +107,11 @@ def store_info(G,k):
     with open(FILE_DIRECTORY_PREFIX + "cluster_graph_details.txt", 'w') as graph_info:
         timestamp = datetime.timestamp(datetime.now())
         date = datetime.fromtimestamp(timestamp)
-        graph_info.write("c Timestamp: " + str(date) + "\n")
-        graph_info.write("c Nodes: " + str(G.number_of_nodes()) + "\n")
+        graph_info.write("c\n")
+        graph_info.write("# Timestamp: " + str(date) + "\n")
+        graph_info.write("# Nodes: " + str(G.number_of_nodes()) + "\n")
         data = G.edges.data()
-        graph_info.write("c Edges: " + str(len(data)))
+        graph_info.write("# Edges: " + str(len(data)))
         weights = G.nodes.data('weight')
         for node in weights:
             #print(node)
