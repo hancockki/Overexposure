@@ -365,7 +365,7 @@ def testOriginaltoCluster(n, c, k):
     showOriginalGraph(G_test, c)
     G_cluster = buildClusteredSet(G_test, c)
 
-    f = open("make_matrix.txt", "a")
+    f = open("currently_in_use/make_matrix.txt", "a")
     f.write("cluster dictionary:" + str(clusterDict) + "\n")
     f.write("rej node dictionary: " + str(rejectingNodeDict) + "\n")
     f.write("edge data:" + str(G_cluster.edges.data()) + "\n")

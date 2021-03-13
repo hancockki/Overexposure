@@ -103,7 +103,6 @@ def solve_lp(G,k):
         if value(var) == 1:
             print(var,"=",value(var))
     print("OPT=",value(lp.objective))
-
     # return output
 
 def main():
@@ -132,4 +131,3 @@ def main():
     # nx.draw_networkx_edge_labels(G, pos)
     plt.savefig('this.png')
     plt.show()
-main()

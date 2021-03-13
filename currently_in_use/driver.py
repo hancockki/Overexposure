@@ -3,11 +3,14 @@ import DP_algorithms as dp
 import greedy_approx_algorithms as greedy
 import brute_force as bf
 import bipartite_linear_program as blp
+import create_graph_from_file as cff
 import networkx as nx
 import matplotlib.pyplot as plt
 import sys
 import linear_program as lp
 from datetime import datetime
+
+FILE_DIRECTORY_PREFIX = "currently_in_use/"
 
 #TODO: allow user to type in how many nodes they want in the graph
 #TODO: timestamp each graph with when you ran it
@@ -34,13 +37,17 @@ Come up with an experiment design based on papers that we've read, then see how 
 """
 
 def runTests():
-    #create cluster greaph
-    #G = cc.testOriginaltoCluster(30, 0.7, 3)
-    k = 10
-    G = cc.createClusterGraph(3, 5)
+    #create cluster graph
+    k = 3
+    num_nodes = 10
+    criticality = 0.7
+    max_weight = 5
+    #G = cc.testOriginaltoCluster(num_nodes, criticality, k)
+    #G = cc.createClusterGraph(num_nodes, max_weight)
+    G = cff.create_cluster_graph(FILE_DIRECTORY_PREFIX + "cluster_graph_details.txt")
     #compute payoff for greedy DP
     max_val_greedyDP = dp.greedyDP(G, G.number_of_nodes(), k)
-    with open("currently_in_use/results_details.txt", "a") as results_details:
+    with open(FILE_DIRECTORY_PREFIX + "results_details.txt", "a") as results_details:
         store_info(G,k)
         print("\nGreedy DP Payoff: ", max_val_greedyDP)
         
@@ -63,7 +70,7 @@ def runTests():
 
         
     results_details.close()
-    with open('compare_results.txt', 'a') as results:
+    with open(FILE_DIRECTORY_PREFIX + "compare_results.txt", 'a') as results:
         results.write('\n'+ str(max_val_greedyDP[0]) + '\t\t\t' + str(payoff) + '\t\t\t' + str(payoff_root) + ' ' + str(payoff_no_root))
     results.close()
     printGraph(G)
@@ -71,7 +78,7 @@ def runTests():
 """ display graph """
 def printGraph(G):
     print("printing graph")
-    plt.figure(2)
+    plt.figure("normal cluster graph")
     pos = nx.spring_layout(G)
     nx.draw(G, pos)
 
@@ -80,17 +87,24 @@ def printGraph(G):
     for key,val in node_labels.items():
         node_labels[key] = (key,val)
     nx.draw_networkx_labels(G, pos=pos, labels=node_labels)
-    edge_labels = nx.get_edge_attributes(G,'data') # edge lables rejecting node
+    data_info = nx.get_edge_attributes(G,'data') # edge lables rejecting node
+    weight_info = nx.get_edge_attributes(G,'weight') # edge lables rejecting node
+    edge_labels = {}
+    for key in weight_info.keys():
+        if key in data_info.keys():
+            edge_labels[key] = (data_info[key],weight_info[key])
+        else:
+            edge_labels[key] = ("na",weight_info[key])
     nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=edge_labels)
 
     #edge_labels = nx.get_edge_attributes(G_DP,'weight')
     # nx.draw_networkx_edge_labels(G, pos)
-    plt.savefig('this.png')
+    plt.savefig(FILE_DIRECTORY_PREFIX + "this.png")
     plt.show()
 
 def store_info(G,k):
     print('\nNext Test:\n')
-    with open("currently_in_use/cluster_graph_details.txt", 'w') as graph_info:
+    with open(FILE_DIRECTORY_PREFIX + "cluster_graph_details.txt", 'w') as graph_info:
         timestamp = datetime.timestamp(datetime.now())
         date = datetime.fromtimestamp(timestamp)
         graph_info.write("c Timestamp: " + str(date) + "\n")
@@ -103,6 +117,12 @@ def store_info(G,k):
             graph_info.write("\n" + str(node[1]))
         for item in data:
             graph_info.write("\n" + str(item[0]) + " " + str(item[1]) + " " + str(item[2]['weight']))
+            try:
+                data = item[2]['data']
+                for reject in data:
+                    graph_info.write(" " + str(reject))
+            except:
+                pass
             #print(item)
     #cc.makeMatrix(G,k)
 #main function, used for calling things

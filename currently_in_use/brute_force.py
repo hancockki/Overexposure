@@ -22,8 +22,8 @@ def computePayoff(G, k):
     best_payoff = 0 # record of best payoff   
     best_payoff_selection = -1 # record of which clusters produce best payoff
     for combo in combinations:
-        set_negative_edges = set() # set used to prevent double counting an edge
-        set_reject_nodes = set() # set used to prevent reject nodes from being double counted
+        used_negative_edges = set() # set used to prevent double counting an edge
+        used_reject_nodes = set() # set used to prevent reject nodes from being double counted
         payoff = 0
         for node in combo:
             if DEBUG: print('in node',node, 'val', G.nodes[node]['weight'])
@@ -35,16 +35,15 @@ def computePayoff(G, k):
                 else:
                     edge = (node, neighbor)
                 if DEBUG: print('\tedge',edge, 'weight', G.edges[edge]['weight'])
-                if edge not in set_negative_edges:
-                    set_negative_edges.add(edge)
+                if edge not in used_negative_edges:
+                    used_negative_edges.add(edge)
                     try:
                         reject_node_set = G.edges[edge]['data']
-                        reject_node = reject_node_set.pop()
-                        reject_node_set.add(reject_node)
-                        if reject_node in set_reject_nodes: # don't subtract from payoff if rejecting node already been counted
-                            payoff += 1
-                        else:
-                            set_reject_nodes.add(reject_node)
+                        for reject_node in reject_node_set:
+                            if reject_node in used_reject_nodes: # don't subtract from payoff if rejecting node already been counted
+                                payoff += 1
+                            else:
+                                used_reject_nodes.add(reject_node)
                     except:
                         pass
                     payoff = payoff - G.edges[edge]['weight']
@@ -52,5 +51,5 @@ def computePayoff(G, k):
         if (payoff > best_payoff):
             best_payoff = payoff
             best_payoff_selection = combo
-        if DEBUG: print('selected nodes',combo,'negative edges',set_negative_edges,'total payoff',payoff)
+        if DEBUG: print('selected nodes',combo,'negative edges',used_negative_edges,'total payoff',payoff)
     return best_payoff_selection,best_payoff
