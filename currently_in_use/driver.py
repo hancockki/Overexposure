@@ -10,6 +10,7 @@ import sys
 import linear_program as lp
 from datetime import datetime
 
+# use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
 FILE_DIRECTORY_PREFIX = "currently_in_use/"
 
 #TODO: allow user to type in how many nodes they want in the graph
@@ -43,8 +44,11 @@ def runTests():
     criticality = 0.7
     max_weight = 5
     #G = cc.testOriginaltoCluster(num_nodes, criticality, k)
-    #G = cc.createClusterGraph(num_nodes, max_weight)
-    G = cff.create_from_file(FILE_DIRECTORY_PREFIX + "cluster_graph_details.txt")
+    G = cc.createClusterGraph(num_nodes, max_weight)
+    #c, G = cff.create_from_file(FILE_DIRECTORY_PREFIX + "original_graph.txt")
+    #cc.showOriginalGraph(G,c)
+    #plt.show()
+    
     #compute payoff for greedy DP
     max_val_greedyDP = dp.greedyDP(G, G.number_of_nodes(), k)
     with open(FILE_DIRECTORY_PREFIX + "results_details.txt", "a") as results_details:

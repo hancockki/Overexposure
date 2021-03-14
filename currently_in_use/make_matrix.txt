@@ -80,3 +80,7 @@ cluster dictionary:{0: {1, 2, 3, 4, 6, 7, 8, 9}, 1: {5}}
 rej node dictionary: {0: {0}, 1: {0}}
 edge data:[(0, 1, {'weight': 1, 'data': {0}})]
 node data:[(0, {'weight': 8}), (1, {'weight': 1})]
+cluster dictionary:{0: {0, 2, 4, 5, 7, 9}, 1: {1}}
+rej node dictionary: {0: {8, 3}, 1: {8}}
+edge data:[(0, 1, {'weight': 1, 'data': {8}})]
+node data:[(0, {'weight': 5}), (1, {'weight': 1})]

@@ -20,6 +20,8 @@ import codecs
 #from mat4py import savemat
 import csv
 
+from datetime import datetime
+
 global rejectingNodeDict
 global clusterDict
 global allSubsets
@@ -363,6 +365,7 @@ def testOriginaltoCluster(n, c, k):
     G_test = nx.random_tree(n)
     setAllNodeAttributes(G_test)
     showOriginalGraph(G_test, c)
+    saveOriginalGraph(G_test, c)
     G_cluster = buildClusteredSet(G_test, c)
 
     f = open("currently_in_use/make_matrix.txt", "a")
@@ -382,3 +385,29 @@ def showOriginalGraph(G, c):
             color_map.append('green')
     plt.figure('original network')
     nx.draw_networkx(G, node_color = color_map, pos=nx.spring_layout(G, iterations=1000), arrows=False, with_labels=True)
+
+'''
+Saves the original graph and associated criticality in a file called original_graph.txt
+This file can be used in conjuntion with create_from_file function in create_graph_from_file
+The format used here is described in create_graph_from_file class
+
+@params:
+    G -> original graph
+    c -> criticality (used for show purposes and creating cluster)
+'''
+def saveOriginalGraph(G, c):
+    with open("currently_in_use/original_graph.txt", 'w') as graph_info:
+        timestamp = datetime.timestamp(datetime.now())
+        date = datetime.fromtimestamp(timestamp)
+        graph_info.write("o\n")
+        graph_info.write("crit " + str(c) + "\n")
+        graph_info.write("# Timestamp: " + str(date) + "\n")
+        graph_info.write("# Nodes: " + str(G.number_of_nodes()) + "\n")
+        data = G.edges.data()
+        graph_info.write("# Edges: " + str(len(data)))
+        weights = G.nodes.data('criticality')
+        for node in weights:
+            #print(node)
+            graph_info.write("\n" + str(node[1]))
+        for item in data:
+            graph_info.write("\n" + str(item[0]) + " " + str(item[1]))
