@@ -1,9 +1,19 @@
 """
-Outline important details for the file, ie what methods are most useful.
+This script contains all of the code pertaining to creating the graph data
+structure we are running optimization algorithms on. The method
+testOriginaltoCluster is the driver for converting a tree graph structure to 
+a cluster graph. This method creates a randomly generated tree and then calls
+buildClusteredSet to identify the clusters of accepting nodes. A cluster of accepting
+nodes is all of the acceptable nodes reachable from a given accepting node. In this way,
+a cluster is surrounded by a 'wall' of rejecting nodes. Each cluster becomes a node in the 
+cluster graph, and each edge has weight equal to the number of rejecting nodes between two
+clusters.
+
+The method createClusterGraph is another way to quickly test
+as it does not create a cluster graph but generates a tree that 
+we will use as our cluster graph.
 
 """
-
-
 
 import networkx as nx
 from networkx.algorithms import approximation as approx
@@ -89,14 +99,16 @@ def setVisitedFalse(G):
     for nodeID in nodeList:
         G.nodes[nodeID]["visited"] = False
 
+"""
+Perform BFS to label a cluster. Note how we called setVisitedFalse(G) upon finding an unvisited node.
+The idea is that clusters are "contained" - every cluster is separated from every other cluster by walls of
+rejecting nodes. You will never find another cluster, because if you could, it would simply be one cluster.
+However, we need to set rejecting nodes to visited so that we don't count them for each accepting neighbor.
+This, however, is not problematic, because we label all nodes from the cluster from a single canonical source node.
+We will only reach this method from another cluster - whereupon we call setVisitedFalse(), clearing the rejecting
+nodes, allowing us to again "contain" this new cluster.
+"""
 def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
-    # Perform BFS to label a cluster. Note how we called setVisitedFalse(G) upon finding an unvisited node.
-    # The idea is that clusters are "contained" - every cluster is separated from every other cluster by walls of
-    # rejecting nodes. You will never find another cluster, because if you could, it would simply be one cluster.
-    # However, we need to set rejecting nodes to visited so that we don't count them for each accepting neighbor.
-    # This, however, is not problematic, because we label all nodes from the cluster from a single canonical source node.
-    # We will only reach this method from another cluster - whereupon we call setVisitedFalse(), clearing the rejecting
-    # nodes, allowing us to again "contain" this new cluster.
     
     if G.nodes[source]['visited'] == False:
         setVisitedFalse(G)
@@ -177,13 +189,12 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
 
 # In[43]:
 
+"""
+From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled
+from the (arbitrary) canonical node in its cluster.
+We then select a seed set of up to (not always, depending on the composition of the graph) k source nodes.
+"""
 def buildClusteredSet(G, threshold, thirdAlgorithm=False):
-
-    # From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled
-    # from the (arbitrary) canonical node in its cluster.
-    # We then select a seed set of up to (not always, depending on the composition of the graph) k source nodes.
-    # We select the k source clusters with the highest accepting degree, implemented by sorting a list of tuples.
-    
     nodeList = G.nodes()
     seedSet = []
     clusterCount = 0
@@ -211,38 +222,6 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
 
     make_cluster_edge(G_cluster, G, rejectingNodeDict)    
     return G_cluster
-
-
-def makeMatrix(G, n):
-    f = open("currently_in_use/make_matrix.txt", "w")
-    matrix = [[0] * n for _ in range(n)] #store payoff
-    node_weights = nx.get_node_attributes(G, name='weight')
-    #print("weight of nodes is:", weight)
-    edge_weights = nx.get_edge_attributes(G, 'weight')
-    #print("weight of edges is:", edge_weights)
-    nodes = []
-    edges = [[] for _ in range(n)]
-    for key, value in edge_weights.items():
-        if value == 0:
-            continue
-        matrix[key[0]][key[1]] = value
-        matrix[key[1]][key[0]] = value
-        edges[key[0]].append(value)
-        edges[key[1]].append(value)
-    for key, value in node_weights.items():
-        matrix[key][key] = value
-        nodes.append(value)
-    for i in range(n):
-        fullStr = ','.join([str(elem) for elem in matrix[i] ])
-        f.write(fullStr + "\n")
-    f.close()
-    with open('currently_in_use/make_matrix.csv', mode='w', newline='') as make_matrix:
-        matrix_writer = csv.writer(make_matrix, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        for i in range(n):
-            matrix_writer.writerow(matrix[i])
-    return nodes, edges
-
-
 
 def computeNegPayoff(G, nodeNum):
     nodeWeight = G.nodes[nodeNum]['weight']
@@ -411,3 +390,37 @@ def saveOriginalGraph(G, c):
             graph_info.write("\n" + str(node[1]))
         for item in data:
             graph_info.write("\n" + str(item[0]) + " " + str(item[1]))
+
+"""
+DEPRECATED-- was used to create the matrix of nodes and edges to become input to linear programming.
+However, we are now doing linear programming using python.
+
+"""
+def makeMatrix(G, n):
+    f = open("currently_in_use/make_matrix.txt", "w")
+    matrix = [[0] * n for _ in range(n)] #store payoff
+    node_weights = nx.get_node_attributes(G, name='weight')
+    #print("weight of nodes is:", weight)
+    edge_weights = nx.get_edge_attributes(G, 'weight')
+    #print("weight of edges is:", edge_weights)
+    nodes = []
+    edges = [[] for _ in range(n)]
+    for key, value in edge_weights.items():
+        if value == 0:
+            continue
+        matrix[key[0]][key[1]] = value
+        matrix[key[1]][key[0]] = value
+        edges[key[0]].append(value)
+        edges[key[1]].append(value)
+    for key, value in node_weights.items():
+        matrix[key][key] = value
+        nodes.append(value)
+    for i in range(n):
+        fullStr = ','.join([str(elem) for elem in matrix[i] ])
+        f.write(fullStr + "\n")
+    f.close()
+    with open('currently_in_use/make_matrix.csv', mode='w', newline='') as make_matrix:
+        matrix_writer = csv.writer(make_matrix, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for i in range(n):
+            matrix_writer.writerow(matrix[i])
+    return nodes, edges

@@ -39,8 +39,8 @@ Come up with an experiment design based on papers that we've read, then see how 
 
 def runTests():
     #create cluster graph
-    k = 3
-    num_nodes = 10
+    k = 10
+    num_nodes = 50
     criticality = 0.7
     max_weight = 5
     #G = cc.testOriginaltoCluster(num_nodes, criticality, k)
@@ -50,7 +50,7 @@ def runTests():
     #plt.show()
     
     #compute payoff for greedy DP
-    max_val_greedyDP = dp.greedyDP(G, G.number_of_nodes(), k)
+    max_val_greedyDP = greedy.greedyDP(G, G.number_of_nodes(), k)
     with open(FILE_DIRECTORY_PREFIX + "results_details.txt", "a") as results_details:
         store_info(G,k)
         print("\nGreedy DP Payoff: ", max_val_greedyDP)
@@ -64,18 +64,20 @@ def runTests():
         print("Recursive DP payoff: \n Root: ", payoff_root, "\n No Root: ", payoff_no_root)
 
         #compute payoff using brute force algorithm
-        best_payoff_selection,best_payoff = bf.computePayoff(G, k)
-        print("Brute Force payoff: ", best_payoff_selection, best_payoff)
+        #best_payoff_selection,best_payoff = bf.computePayoff(G, k)
+        #print("Brute Force payoff: ", best_payoff_selection, best_payoff)
 
         #run linear program
-        lp.lp_setup(G, k)
+        payoff_lp = lp.lp_setup(G, k)
 
-        blp.solve_lp(G, k)
+        payoff_blp = blp.solve_lp(G, k)
 
         
     results_details.close()
+    timestamp = datetime.timestamp(datetime.now())
+    date = datetime.fromtimestamp(timestamp)
     with open(FILE_DIRECTORY_PREFIX + "compare_results.txt", 'a') as results:
-        results.write('\n'+ str(max_val_greedyDP[0]) + '\t\t\t' + str(payoff) + '\t\t\t' + str(payoff_root) + ' ' + str(payoff_no_root))
+        results.write('\n'+ str(date) + '\t\t\t' + str(payoff_lp) + '\t\t\t' + str(payoff_blp) + '\t\t\t' + str(max_val_greedyDP[0]) + '\t\t\t' + str(payoff) + '\t\t\t' + str(payoff_root) + ' ' + str(payoff_no_root))
     results.close()
     printGraph(G)
 

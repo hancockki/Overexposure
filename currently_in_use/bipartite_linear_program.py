@@ -102,8 +102,8 @@ def solve_lp(G,k):
     for var in lp.variables():
         if value(var) == 1:
             print(var,"=",value(var))
-    print("OPT=",value(lp.objective))
-    # return output
+    print("OPT Bipartite=",value(lp.objective))
+    return value(lp.objective)
 
 def main():
     n = 20

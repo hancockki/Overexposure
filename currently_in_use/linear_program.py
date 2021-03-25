@@ -43,8 +43,10 @@ def lp_setup(G, k):
 
     #Print solution
     for var in prob.variables():
-        print(var, "=", value(var))
-    print("OPT =", value(prob.objective))
+        if value(var) == 1:
+            print(var, "=", value(var))
+    print("OPT LP=", value(prob.objective))
+    return value(prob.objective)
 """
 We want to maximize the sum of nodes minus the sum of edges for each cluster. We use a bipartite graph and ensure that
 we do not double count each edge by ensuring that once we subtract an edge once, we cannot subtract it again.
