@@ -77,7 +77,7 @@ def runTests():
     timestamp = datetime.timestamp(datetime.now())
     date = datetime.fromtimestamp(timestamp)
     with open(FILE_DIRECTORY_PREFIX + "compare_results.txt", 'a') as results:
-        results.write('\n'+ str(date) + '\t\t\t' + str(payoff_lp) + '\t\t\t' + str(payoff_blp) + '\t\t\t' + str(max_val_greedyDP[0]) + '\t\t\t' + str(payoff) + '\t\t\t' + str(payoff_root) + ' ' + str(payoff_no_root))
+        results.write('\n'+ str(date) + '\t\t\t' + str(payoff_lp) + '\t\t' + str(payoff_blp) + '\t\t\t' + str(max_val_greedyDP[0]) + '\t\t\t' + str(payoff) + '\t\t\t' + str(payoff_root) + ' ' + str(payoff_no_root))
     results.close()
     printGraph(G)
 

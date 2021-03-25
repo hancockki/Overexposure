@@ -1,6 +1,16 @@
 import networkx as nx
 import DP_algorithms as dp
 
+def computeNegPayoff(G, nodeNum):
+    nodeWeight = G.nodes[nodeNum]['weight']
+    negPayoff = nx.neighbors(G, nodeNum)
+    for negNode in negPayoff:
+        add = G.get_edge_data(nodeNum, negNode)
+        add = add['weight']
+        nodeWeight -= add
+    #print("node weight is:", nodeWeight)
+    return nodeWeight
+    
 """
 Compute the payoff for the greedy algorithm
 """
@@ -9,7 +19,7 @@ def computePayoffGreedy(G, k_highest):
     nodes_counted = []
     for payoff_tuple in k_highest:
         cur_node = payoff_tuple[1]
-        node_payoff = dp.computeNegPayoff(G, cur_node)
+        node_payoff = computeNegPayoff(G, cur_node)
         for node in nodes_counted: #dont want to double count edges!
             neighbors = nx.neighbors(G, node)
             for neighbor in neighbors:
@@ -36,16 +46,6 @@ def kHighestClusters(G, k):
     #print(weights_list)
     payoff = computePayoffGreedy(G, weights_list[0:k])
     return weights_list[0:k], payoff
-
-def computeNegPayoff(G, nodeNum):
-    nodeWeight = G.nodes[nodeNum]['weight']
-    negPayoff = nx.neighbors(G, nodeNum)
-    for negNode in negPayoff:
-        add = G.get_edge_data(nodeNum, negNode)
-        add = add['weight']
-        nodeWeight -= add
-    #print("node weight is:", nodeWeight)
-    return nodeWeight
 
 def greedyDP(G, i, k): #doesn't consider subtrees
     #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
