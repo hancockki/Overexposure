@@ -45,7 +45,7 @@ def kHighestClusters(G, k):
     weights_list = sorted(weights_list, reverse=True)
     #print(weights_list)
     payoff = computePayoffGreedy(G, weights_list[0:k])
-    return weights_list[0:k], payoff
+    return payoff, weights_list[0:k]
 
 def greedyDP(G, i, k): #doesn't consider subtrees
     #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster

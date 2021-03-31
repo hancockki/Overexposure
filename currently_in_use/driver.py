@@ -6,12 +6,15 @@ import bipartite_linear_program as blp
 import create_graph_from_file as cff
 import networkx as nx
 import matplotlib.pyplot as plt
+import make_bipartite_graph as mbg
 import sys
+import openpyxl
+import xlwt
 import linear_program as lp
 from datetime import datetime
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
-FILE_DIRECTORY_PREFIX = "currently_in_use/"
+FILE_DIRECTORY_PREFIX = "currently_in_use/tests/"
 
 #TODO: allow user to type in how many nodes they want in the graph
 #TODO: timestamp each graph with when you ran it
@@ -43,42 +46,36 @@ def runTests():
     num_nodes = 50
     criticality = 0.7
     max_weight = 5
-    #G = cc.testOriginaltoCluster(num_nodes, criticality, k)
-    G = cc.createClusterGraph(num_nodes, max_weight)
+    G = cc.testOriginaltoCluster(num_nodes, criticality, k)
+    #G = cc.createClusterGraph(num_nodes, max_weight)
     #c, G = cff.create_from_file(FILE_DIRECTORY_PREFIX + "original_graph.txt")
     #cc.showOriginalGraph(G,c)
     #plt.show()
     
     #compute payoff for greedy DP
-    max_val_greedyDP = greedy.greedyDP(G, G.number_of_nodes(), k)
-    with open(FILE_DIRECTORY_PREFIX + "results_details.txt", "a") as results_details:
-        store_info(G,k)
-        print("\nGreedy DP Payoff: ", max_val_greedyDP)
+    max_val_greedyDP, seedset = greedy.greedyDP(G, G.number_of_nodes(), k)
+    store_info(G,k)
+    print("\nGreedy DP Payoff: ", max_val_greedyDP)
         
-        #compute payoff for most basic greedy algorithm
-        greedy_seedset, payoff = greedy.kHighestClusters(G, k)
-        print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", payoff)
+    #compute payoff for most basic greedy algorithm
+    greedy_payoff, greedy_seedset = greedy.kHighestClusters(G, k)
+    print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", greedy_payoff)
 
-        #compute payoff for recursive DP
-        payoff_root, payoff_no_root = dp.runRecursiveDP(G, k)
-        print("Recursive DP payoff: \n Root: ", payoff_root, "\n No Root: ", payoff_no_root)
+    #compute payoff for recursive DP
+    payoff_root, payoff_no_root = dp.runRecursiveDP(G, k)
+    print("Recursive DP payoff: \n Root: ", payoff_root, "\n No Root: ", payoff_no_root)
 
-        #compute payoff using brute force algorithm
-        #best_payoff_selection,best_payoff = bf.computePayoff(G, k)
-        #print("Brute Force payoff: ", best_payoff_selection, best_payoff)
+    #compute payoff using brute force algorithm
+    #best_payoff_selection,best_payoff = bf.computePayoff(G, k)
+    #print("Brute Force payoff: ", best_payoff_selection, best_payoff)
 
-        #run linear program
-        payoff_lp = lp.lp_setup(G, k)
+    #run linear program
+    payoff_lp = lp.lp_setup(G, k)
 
-        payoff_blp = blp.solve_lp(G, k)
+    bipartite = mbg.graph_to_bipartite(G)
+    payoff_blp = blp.solve_lp(bipartite, k)
 
-        
-    results_details.close()
-    timestamp = datetime.timestamp(datetime.now())
-    date = datetime.fromtimestamp(timestamp)
-    with open(FILE_DIRECTORY_PREFIX + "compare_results.txt", 'a') as results:
-        results.write('\n'+ str(date) + '\t\t\t' + str(payoff_lp) + '\t\t' + str(payoff_blp) + '\t\t\t' + str(max_val_greedyDP[0]) + '\t\t\t' + str(payoff) + '\t\t\t' + str(payoff_root) + ' ' + str(payoff_no_root))
-    results.close()
+    write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, num_nodes,k)
     printGraph(G)
 
 """ display graph """
@@ -132,6 +129,22 @@ def store_info(G,k):
                 pass
             #print(item)
     #cc.makeMatrix(G,k)
+
+def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, n, k):
+    wb = openpyxl.load_workbook('currently_in_use/tests/Test_results.xlsx')
+    ws = wb.active
+    timestamp = datetime.timestamp(datetime.now())
+    date = str(datetime.fromtimestamp(timestamp))
+    row = ws.max_row+1
+    items_to_add = [n, k, date, max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp]
+    i = 1
+    for item in items_to_add:
+        c1 = ws.cell(row = row, column = i)
+        c1.value = item
+        i += 1
+    wb.save('currently_in_use/tests/Test_results.xlsx')
+
+
 #main function, used for calling things
 def main():
     runTests()

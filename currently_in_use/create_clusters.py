@@ -220,7 +220,7 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
         if DEBUG: print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
         G_cluster.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
 
-    make_cluster_edge(G_cluster, G, rejectingNodeDict)    
+    make_cluster_edge(G_cluster, G, rejectingNodeDict, True)    
     return G_cluster
 
 def computeNegPayoff(G, nodeNum):
@@ -346,7 +346,6 @@ def testOriginaltoCluster(n, c, k):
     showOriginalGraph(G_test, c)
     saveOriginalGraph(G_test, c)
     G_cluster = buildClusteredSet(G_test, c)
-
     f = open("currently_in_use/make_matrix.txt", "a")
     f.write("cluster dictionary:" + str(clusterDict) + "\n")
     f.write("rej node dictionary: " + str(rejectingNodeDict) + "\n")

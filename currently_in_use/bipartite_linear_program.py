@@ -3,17 +3,9 @@ import create_clusters as cc
 import networkx as nx
 import matplotlib.pyplot as plt
 import brute_force as bf
+import make_bipartite_graph as mbg
 
 CONST_SUFFIX = "_constraint"
-
-def get_input_graph(n,c,k):
-    """
-    Make a cluster graph to run the lp on
-    """
-    #create cluster greaph
-    G = cc.testOriginaltoCluster(n, c, k)
-    #G = cc.createClusterGraph(20, 10)
-    return G
 
 '''
 LP Formulation:
@@ -39,35 +31,27 @@ def solve_lp(G,k):
     weight_clusters = []
     for node in x_keys:
         weight_clusters.append(G.nodes[node]['weight'])
-        '''
+    '''
     # zip these keys and weights
-    x_keys = list(range(0,G.number_of_nodes()))
+    x_keys = []
+    y_keys = []
+    r_to_n_record = {}
     weight_dict = nx.get_node_attributes(G,'weight')
-    
-
+    print("Weight dictionary: ", weight_dict)
+    print(G.nodes(), G.out_edges())
+    for edge in G.out_edges():
+        if edge[0] not in y_keys:
+            y_keys.append(edge[0])
+        if edge[1] not in x_keys:
+            x_keys.append(edge[1])
+        if edge[0] not in r_to_n_record.keys():
+            r_to_n_record[edge[0]] = [edge[1]]
+        else:
+            r_to_n_record[edge[0]].append(edge[1])
+        
+    print("X_keys: ", x_keys, "Y_keys: ", y_keys, "r_to_n_record:  ", r_to_n_record)
     # create list of y keys (0->num r)
     # create list of clusters that are connected to a particular reject node
-    r_to_n_record = dict() # don
-    for edge in G.edges:
-        try:
-            # add reject node number to set (need to pop and replace so don't loose in other locations bc memory location the same)
-            reject_node_set = G.edges[edge]['data']
-            reject_node = reject_node_set.pop()
-            reject_node_set.add(reject_node)
-            
-            temp = -1
-            if reject_node in r_to_n_record:
-                temp = r_to_n_record[reject_node]
-            else:
-                temp = set()
-            temp.add(edge[0])
-            temp.add(edge[1])
-            r_to_n_record[reject_node] = temp
-        except:
-            pass
-
-    x_keys = weight_dict.keys()
-    y_keys = r_to_n_record.keys()
 
     #print("x keys:",weight_dict)
     #print("y_keys:",r_to_n_record)
@@ -105,6 +89,7 @@ def solve_lp(G,k):
     print("OPT Bipartite=",value(lp.objective))
     return value(lp.objective)
 
+'''
 def main():
     n = 20
     c = 0.7
@@ -131,3 +116,22 @@ def main():
     # nx.draw_networkx_edge_labels(G, pos)
     plt.savefig('this.png')
     plt.show()
+
+    for edge in G.edges:
+        try:
+            # add reject node number to set (need to pop and replace so don't loose in other locations bc memory location the same)
+            reject_node_set = G.edges[edge]['data']
+            reject_node = reject_node_set.pop()
+            reject_node_set.add(reject_node)
+            
+            temp = -1
+            if reject_node in r_to_n_record:
+                temp = r_to_n_record[reject_node]
+            else:
+                temp = set()
+            temp.add(edge[0])
+            temp.add(edge[1])
+            r_to_n_record[reject_node] = temp
+        except:
+            pass
+'''
