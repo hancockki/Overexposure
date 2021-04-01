@@ -43,7 +43,7 @@ Come up with an experiment design based on papers that we've read, then see how 
 def runTests():
     #create cluster graph
     k = 10
-    num_nodes = 50
+    num_nodes = 20
     criticality = 0.7
     max_weight = 5
     G = cc.testOriginaltoCluster(num_nodes, criticality, k)

@@ -296,7 +296,6 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False)
                 weight = len(intersection)
                 if weight > 0:  
                     G_cluster.add_edge(clusterNum, clusterNum2, weight=weight, data=intersection)
-                    #print("intersection between nodes ", clusterNum, clusterNum2, "is:", intersection, "of weight", weight)
                 if removeCycles:
                     try:
                         while len(nx.find_cycle(G_cluster)) > 0:

@@ -44,12 +44,11 @@ def solve_lp(G,k):
             y_keys.append(edge[0])
         if edge[1] not in x_keys:
             x_keys.append(edge[1])
-        if edge[0] not in r_to_n_record.keys():
-            r_to_n_record[edge[0]] = [edge[1]]
+        if edge[1] not in r_to_n_record.keys():
+            r_to_n_record[edge[1]] = [edge[0]]
         else:
-            r_to_n_record[edge[0]].append(edge[1])
-        
-    print("X_keys: ", x_keys, "Y_keys: ", y_keys, "r_to_n_record:  ", r_to_n_record)
+            r_to_n_record[edge[1]].append(edge[0])
+    print("X_keys: ", x_keys, "\nY_keys: ", y_keys, "\nr_to_n_record:  ", r_to_n_record)
     # create list of y keys (0->num r)
     # create list of clusters that are connected to a particular reject node
 
@@ -66,7 +65,6 @@ def solve_lp(G,k):
 
     # add in objective function w/ lpSum
     lp += lpSum(x[i] * weight_dict[i] for i in x_keys) - lpSum(y[i] for i in y_keys)
-    #print(lp.objective)
     
     # create constraints
     lp += lpSum(x[x_key] for x_key in x_keys) <= k, "max_cluster_select_of_" + str(k)
@@ -94,10 +92,10 @@ def main():
     n = 20
     c = 0.7
     k = 5
-    G = get_input_graph(n,c,k)
+    #G = get_input_graph(n,c,k)
     #print(G.nodes)
     #print(G.edges)
-    solve_lp(G,k)
+    #solve_lp(G,k)
     print("Brute force:", bf.computePayoff(G,k))
 
     #print graph
