@@ -34,6 +34,11 @@ import make_bipartite_graph as mbg
 
 CONST_SUFFIX = "_constraint"
 
+""" 
+Called from witihin driver to solve the linear program.
+Create variables for each cluster and rejecting node and then
+map the weights of each edge onto it.
+"""
 def solve_lp(G,k):
     x_keys = []
     y_keys = []
@@ -49,12 +54,8 @@ def solve_lp(G,k):
         if node not in x_keys:
             x_keys.append(node)
 
-    #print("x keys:",weight_dict)
-    #print("y_keys:",r_to_n_record)
-    # add in x variable w/ LpVariable.dicts
-    x_keys.sort()
+    #add x and y variables
     x = LpVariable.dicts("x", x_keys, lowBound=0, cat="Integer")
-    # add in y variable ""
     y = LpVariable.dicts("y", y_keys, lowBound=0, cat="Integer")
     print("X_keys: ", x_keys, x, "\nY_keys: ", y_keys, y)
 
@@ -74,8 +75,6 @@ def solve_lp(G,k):
         for node in G.neighbors(y_key):
             #print("Neighbor of ", y_key, " is ", node)
             lp += y[y_key] >= x[node], "reject_" + str(y_key) + "_to_node_" + str(node) + CONST_SUFFIX
-    
-    # y[r] >= 0 implicit
 
     # solve lp
     status = lp.solve(PULP_CBC_CMD(msg=0)) # PULP_CBC_CMD(msg=0)

@@ -12,6 +12,8 @@ and a criticality threshold of 0.7 (any node whose criticality is above
 
 python3 driver.py 50 5 0.7
 
+Note that the above line requires that you are inside the currently_in_use folder
+
 The main method which reads in these arguments passes them onto runTests(),
 which acts as a driver for the following algorithms:
 
@@ -24,7 +26,7 @@ can choose to uncomment it and run)
 6) Bipartite linear program (optimal on any graph)
 
 All of the results are printed to the terminal and then
-written to an excel sheet which is within the folder tests
+written to an excel sheet which is within the folder currently_in_use/tests
 
 We also print the original, cluster, and bipartite graph to be used for comparison.
 Note that the first thing we do in runTests is try to create 
@@ -38,9 +40,6 @@ TODO: find a more efficient way to satisfy these properties. For
 original graphs with >100 nodes, it takes a long time to create
 a cluster graph which satisfies the properties.
 """
-
-
-
 import create_clusters as cc
 import DP_algorithms as dp
 import greedy_approx_algorithms as greedy
@@ -53,7 +52,7 @@ import make_bipartite_graph as mbg
 import sys
 import openpyxl
 import xlwt
-import linear_program as lp
+import cluster_linear_program as lp
 from datetime import datetime
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
@@ -83,13 +82,26 @@ Come up with an experiment design based on papers that we've read, then see how 
     We want to save the graph and run tests based on that
 """
 
+"""
+Driver for all of our algorithms.
+@params:
+    num_nodes --> number of nodes in the original graph
+    k --> number of seeds chosen. Corresponds to number of clusters
+    picked in the cluster graph
+    criticality --> criticality threshold for nodes in the original graph.
+    Nodes above this value will be accepting
+"""
 def runTests(num_nodes, k, criticality):
     #create cluster graph
-    G = False
+    G = False #initialize to false, when we get a graph that satisfies the requirements
+    #this will be true
+    #TODO: commented out. Used when we want to create a cluster graph without an original graph
     #max_weight = 5
     while G == False:
         G = cc.testOriginaltoCluster(num_nodes, criticality, k)
         print("G is ", G)
+    #TODO: commented out. Comment out the above 3 lines and uncomment this to create a tree cluster
+    #graph without starting with the original. Useful for testing.
     #G = cc.createClusterGraph(num_nodes, max_weight)
     
     #compute payoff for greedy DP
@@ -105,20 +117,23 @@ def runTests(num_nodes, k, criticality):
     payoff_root, payoff_no_root = dp.runRecursiveDP(G, k)
     print("Recursive DP payoff: \n Root: ", payoff_root, "\n No Root: ", payoff_no_root)
 
-    #compute payoff using brute force algorithm
+    #compute payoff using brute force algorithm --> uncomment out if you want to run
     #best_payoff_selection,best_payoff = bf.computePayoff(G, k)
     #print("Brute Force payoff: ", best_payoff_selection, best_payoff)
 
     #run linear program
     payoff_lp = lp.lp_setup(G, k)
-
+    #run bipartite linear program
     bipartite = mbg.graph_to_bipartite(G)
     payoff_blp = blp.solve_lp(bipartite, k)
 
+    #write the results to excel file
     write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, num_nodes,k)
+    #print cluster graph and bipartite graph
     printGraph(G)
     printBipartite(bipartite)
 
+""" Print bipartite graph using network x. Saved to file"""
 def printBipartite(bipartite):
     print("printing bipartite graph")
     plt.figure("bipartite graph")
@@ -130,12 +145,11 @@ def printBipartite(bipartite):
     for key,val in node_labels.items():
         node_labels[key] = (key,val)
     nx.draw_networkx_labels(bipartite, pos=pos, labels=node_labels)
-    plt.savefig(FILE_DIRECTORY_PREFIX + "this.png")
+    plt.savefig("bipartite.png")
     plt.show()
 
-""" display graph """
+""" display cluster graph """
 def printGraph(G):
-    print("printing graph")
     plt.figure("normal cluster graph")
     pos = nx.spring_layout(G)
     nx.draw(G, pos)
@@ -154,40 +168,37 @@ def printGraph(G):
         else:
             edge_labels[key] = ("na",weight_info[key])
     nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=edge_labels)
+    plt.savefig("cluster.png")
 
-    #edge_labels = nx.get_edge_attributes(G_DP,'weight')
-    # nx.draw_networkx_edge_labels(G, pos)
-
-    plt.savefig(FILE_DIRECTORY_PREFIX + "this.png")
-    #plt.show()
-
+""" Store more specific info about each graph, to be used for testing if the 
+results output in the excel sheet are inaccurate / do not make sense """
 def store_info(G,k):
     print('\nNext Test:\n')
-    with open(FILE_DIRECTORY_PREFIX + "cluster_graph_details.txt", 'w') as graph_info:
+    with open("tests/cluster_graph_details.txt", 'w') as graph_info:
         timestamp = datetime.timestamp(datetime.now())
         date = datetime.fromtimestamp(timestamp)
-        graph_info.write("c\n")
+        graph_info.write("Prints each node weight on a new line followed by each edge. \n \
+Ie the first number printed is the weight of node 0. Then prints each edge followed by its weight and the rejecting nodes.\n \
+For example, 0 2 1 -22 indicates that there is an edge (0,2) with weight 1, and the rejecting node in that edge is node 22. \n")
         graph_info.write("# Timestamp: " + str(date) + "\n")
         graph_info.write("# Nodes: " + str(G.number_of_nodes()) + "\n")
         data = G.edges.data()
         graph_info.write("# Edges: " + str(len(data)))
         weights = G.nodes.data('weight')
         for node in weights:
-            #print(node)
             graph_info.write("\n" + str(node[1]))
         for item in data:
             graph_info.write("\n" + str(item[0]) + " " + str(item[1]) + " " + str(item[2]['weight']))
             try:
-                data = item[2]['data']
+                data = item[2]['rej_nodes']
                 for reject in data:
                     graph_info.write(" " + str(reject))
             except:
                 pass
-            #print(item)
-    #cc.makeMatrix(G,k)
 
+""" Write results to an excel sheet stored in the currently_in_use/tests folder """
 def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, n, k):
-    wb = openpyxl.load_workbook('currently_in_use/tests/Test_results.xlsx')
+    wb = openpyxl.load_workbook('tests/Test_results.xlsx')
     ws = wb.active
     timestamp = datetime.timestamp(datetime.now())
     date = str(datetime.fromtimestamp(timestamp))
@@ -198,11 +209,14 @@ def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, pa
         c1 = ws.cell(row = row, column = i)
         c1.value = item
         i += 1
-    wb.save('currently_in_use/tests/Test_results.xlsx')
+    wb.save('tests/Test_results.xlsx')
 
 
 #main function, used for calling things
 def main(num_seeds, k, criticality):
+    num_seeds = int(num_seeds)
+    k = int(k)
+    criticality = float(criticality)
     runTests(num_seeds, k, criticality)
 
 if __name__ == "__main__":

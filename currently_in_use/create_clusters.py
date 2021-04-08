@@ -13,6 +13,13 @@ The method createClusterGraph is another way to quickly test
 as it does not create a cluster graph but generates a tree that 
 we will use as our cluster graph.
 
+In creating our cluster graph, we have two requirements for running recursive DP, knapsack DP,
+and the cluster linear program.
+    1) no cycles present in the graph
+    2) no rejecting node is shared by more than 2 clusters (ie only present in one edge)
+
+If we want to ensure these two properties hold, set the global boolean DEBUG to true. If not, set it to false.
+The script driver.py will keep calling testOriginalToCluster until it can create a graph that satisfies these properties.
 """
 
 import networkx as nx
@@ -240,6 +247,9 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
     make_cluster_edge(G_cluster, G, rejectingNodeDict, True)    
     return G_cluster
 
+"""
+Subtract the number of rejecting nodes connected to a given cluster from its weight.
+"""
 def computeNegPayoff(G, nodeNum):
     nodeWeight = G.nodes[nodeNum]['weight']
     negPayoff = nx.neighbors(G, nodeNum)
@@ -250,6 +260,11 @@ def computeNegPayoff(G, nodeNum):
     #print("node weight is:", nodeWeight)
     return nodeWeight
 
+"""
+Perform bfs from a given source accepting node to identify all the accepting nodes
+reachable from the source node. Set visited to true once we have identified a node
+as rejecting or accepting.
+"""
 def bfs(G, node, source):
     # From a source node, perform BFS based on criticality.
     queue = []
@@ -367,12 +382,14 @@ def testOriginaltoCluster(n, c, k):
         print("DIDNT WORK")
         clearVisitedNodesAndDictionaries(G_test)
         return False
-    f = open("currently_in_use/make_matrix.txt", "a")
+    '''
+    f = open("make_matrix.txt", "a")
     f.write("cluster dictionary:" + str(clusterDict) + "\n")
     f.write("rej node dictionary: " + str(rejectingNodeDict) + "\n")
     f.write("edge data:" + str(G_cluster.edges.data()) + "\n")
     f.write("node data:" + str(G_cluster.nodes.data()) + "\n")
     f.close()
+    '''
     return G_cluster
 
 def showOriginalGraph(G, c):
@@ -395,7 +412,7 @@ The format used here is described in create_graph_from_file class
     c -> criticality (used for show purposes and creating cluster)
 '''
 def saveOriginalGraph(G, c):
-    with open("currently_in_use/original_graph.txt", 'w') as graph_info:
+    with open("original_graph.txt", 'w') as graph_info:
         timestamp = datetime.timestamp(datetime.now())
         date = datetime.fromtimestamp(timestamp)
         graph_info.write("o\n")
