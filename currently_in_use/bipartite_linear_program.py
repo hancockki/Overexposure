@@ -1,13 +1,12 @@
-from pulp import *
-import create_clusters as cc
-import networkx as nx
-import matplotlib.pyplot as plt
-import brute_force as bf
-import make_bipartite_graph as mbg
-
-CONST_SUFFIX = "_constraint"
-
 '''
+Run linear programming with the input graph as a bipartite graph. To do this, we take the cluster graph and transform it 
+into a bipartite graph. We do this in the script make_bipartite_graph (look for more details).
+We then call solve_lp with the bipartite graph as input, where each rejecting node is a variable in the lp
+and each accepting cluster is a variable. Note that this is different from the regular linear program, where
+the variables are all the accepting clusters and all the edges in the graph (rather than here where each rejecting
+node in the cluster graph is a node in the bipartite graph). We then know if we take a cluster we must take all the 
+rejecting nodes which point to that cluster.
+
 LP Formulation:
     Constants: k, the number of clusters can take
 
@@ -25,40 +24,39 @@ LP Formulation:
         x[i] <= y[r] for all "edges" (r,i) in the bipartite graph (I say "edges" because this can be literal or conceptual)
         -y[r] <= 0 means can't allow for negative taking of edges (more easliy understood as y[r] >= 0) 
 '''
+
+from pulp import *
+import create_clusters as cc
+import networkx as nx
+import matplotlib.pyplot as plt
+import brute_force as bf
+import make_bipartite_graph as mbg
+
+CONST_SUFFIX = "_constraint"
+
 def solve_lp(G,k):
-    # create x keys (0->num clusters) and corresponding weights
-    '''x_keys = list(range(0,G.number_of_nodes()))
-    weight_clusters = []
-    for node in x_keys:
-        weight_clusters.append(G.nodes[node]['weight'])
-    '''
-    # zip these keys and weights
     x_keys = []
     y_keys = []
-    r_to_n_record = {}
     weight_dict = nx.get_node_attributes(G,'weight')
     print("Weight dictionary: ", weight_dict)
-    print(G.nodes(), G.out_edges())
-    for edge in G.out_edges():
+    print("\nNodes in bipartite \n", G.nodes(), "\nOut edges: \n", G.out_edges())
+    for edge in G.edges():
         if edge[0] not in y_keys:
             y_keys.append(edge[0])
         if edge[1] not in x_keys:
             x_keys.append(edge[1])
-        if edge[1] not in r_to_n_record.keys():
-            r_to_n_record[edge[1]] = [edge[0]]
-        else:
-            r_to_n_record[edge[1]].append(edge[0])
-    print("X_keys: ", x_keys, "\nY_keys: ", y_keys, "\nr_to_n_record:  ", r_to_n_record)
-    # create list of y keys (0->num r)
-    # create list of clusters that are connected to a particular reject node
+    for node in G.nodes():
+        if node not in x_keys:
+            x_keys.append(node)
 
     #print("x keys:",weight_dict)
     #print("y_keys:",r_to_n_record)
     # add in x variable w/ LpVariable.dicts
+    x_keys.sort()
     x = LpVariable.dicts("x", x_keys, lowBound=0, cat="Integer")
-
     # add in y variable ""
     y = LpVariable.dicts("y", y_keys, lowBound=0, cat="Integer")
+    print("X_keys: ", x_keys, x, "\nY_keys: ", y_keys, y)
 
     # create lp with LpProblem
     lp = LpProblem("Bipartite_ILP", LpMaximize)
@@ -73,7 +71,8 @@ def solve_lp(G,k):
         lp += x[x_key] <= 1, "cluster_" + str(x_key) + CONST_SUFFIX
 
     for y_key in y_keys:
-        for node in r_to_n_record[y_key]:
+        for node in G.neighbors(y_key):
+            #print("Neighbor of ", y_key, " is ", node)
             lp += y[y_key] >= x[node], "reject_" + str(y_key) + "_to_node_" + str(node) + CONST_SUFFIX
     
     # y[r] >= 0 implicit

@@ -5,7 +5,7 @@ def graph_to_bipartite(G):
     bipartite_graph = nx.DiGraph()
     for edge in G.edges.data():
         #get all rej nodes in that edge
-        print("Edge: ", edge)
+        #print("Edge: ", edge)
         if not bipartite_graph.has_node(edge[0]):
             bipartite_graph.add_node(edge[0])
             bipartite_graph.nodes[edge[0]]['weight'] = G.nodes[edge[0]]['weight']
@@ -13,9 +13,10 @@ def graph_to_bipartite(G):
             bipartite_graph.add_node(edge[1])
             bipartite_graph.nodes[edge[1]]['weight'] = G.nodes[edge[1]]['weight']
         try:
-            for rej_node in edge[2]['data']: #look at all rejecting nodes
+            for rej_node in edge[2]['rej_nodes']: #look at all rejecting nodes
                 if not bipartite_graph.has_node(rej_node):
                     bipartite_graph.add_node(rej_node)
+                    bipartite_graph.nodes[rej_node]['weight'] = rej_node
                 if not bipartite_graph.has_edge(rej_node, edge[0]):
                     bipartite_graph.add_edge(rej_node, edge[0])
                 if not bipartite_graph.has_edge(rej_node, edge[1]):

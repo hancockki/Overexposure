@@ -1,3 +1,46 @@
+"""
+Driver for entire program.
+How to run the program:
+The program takes four commad line arguments. 
+The first is the program name, the second is the number of 
+nodes in the original graph, the third is the number of seeds
+we are choosing for our seed set, and the fourth is the criticality
+parameter. For example, typing the following in the terminal would 
+output an optimal seed set of size 5 for an original graph with 50 nodes
+and a criticality threshold of 0.7 (any node whose criticality is above
+0.7 will be an accepting node)
+
+python3 driver.py 50 5 0.7
+
+The main method which reads in these arguments passes them onto runTests(),
+which acts as a driver for the following algorithms:
+
+1) greedy dynamic programming
+2) greedy knapsack
+3) recursive DP (optimal for trees where <=2 clusters share any rej node)
+4) Brute force (commented out by default because it takes so long. User
+can choose to uncomment it and run)
+5) Linear Program (optimal only when <= 2 clusters share any rej node)
+6) Bipartite linear program (optimal on any graph)
+
+All of the results are printed to the terminal and then
+written to an excel sheet which is within the folder tests
+
+We also print the original, cluster, and bipartite graph to be used for comparison.
+Note that the first thing we do in runTests is try to create 
+a graph that satisfies our requirements, namely:
+    1) No rejecting node is shared by more than 2 clusters
+    2) No cycles in the cluster graph
+
+We continuously try to make the cluster graph until these
+properties are satisfied.
+TODO: find a more efficient way to satisfy these properties. For 
+original graphs with >100 nodes, it takes a long time to create
+a cluster graph which satisfies the properties.
+"""
+
+
+
 import create_clusters as cc
 import DP_algorithms as dp
 import greedy_approx_algorithms as greedy
@@ -40,17 +83,14 @@ Come up with an experiment design based on papers that we've read, then see how 
     We want to save the graph and run tests based on that
 """
 
-def runTests():
+def runTests(num_nodes, k, criticality):
     #create cluster graph
-    k = 10
-    num_nodes = 20
-    criticality = 0.7
-    max_weight = 5
-    G = cc.testOriginaltoCluster(num_nodes, criticality, k)
+    G = False
+    #max_weight = 5
+    while G == False:
+        G = cc.testOriginaltoCluster(num_nodes, criticality, k)
+        print("G is ", G)
     #G = cc.createClusterGraph(num_nodes, max_weight)
-    #c, G = cff.create_from_file(FILE_DIRECTORY_PREFIX + "original_graph.txt")
-    #cc.showOriginalGraph(G,c)
-    #plt.show()
     
     #compute payoff for greedy DP
     max_val_greedyDP, seedset = greedy.greedyDP(G, G.number_of_nodes(), k)
@@ -77,6 +117,21 @@ def runTests():
 
     write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, num_nodes,k)
     printGraph(G)
+    printBipartite(bipartite)
+
+def printBipartite(bipartite):
+    print("printing bipartite graph")
+    plt.figure("bipartite graph")
+    pos = nx.spring_layout(bipartite)
+    nx.draw(bipartite, pos)
+
+    node_labels = nx.get_node_attributes(bipartite,'weight')
+    # do (id, weight) pair for lable instead of just weight
+    for key,val in node_labels.items():
+        node_labels[key] = (key,val)
+    nx.draw_networkx_labels(bipartite, pos=pos, labels=node_labels)
+    plt.savefig(FILE_DIRECTORY_PREFIX + "this.png")
+    plt.show()
 
 """ display graph """
 def printGraph(G):
@@ -90,7 +145,7 @@ def printGraph(G):
     for key,val in node_labels.items():
         node_labels[key] = (key,val)
     nx.draw_networkx_labels(G, pos=pos, labels=node_labels)
-    data_info = nx.get_edge_attributes(G,'data') # edge lables rejecting node
+    data_info = nx.get_edge_attributes(G,'rej_nodes') # edge lables rejecting node
     weight_info = nx.get_edge_attributes(G,'weight') # edge lables rejecting node
     edge_labels = {}
     for key in weight_info.keys():
@@ -102,8 +157,9 @@ def printGraph(G):
 
     #edge_labels = nx.get_edge_attributes(G_DP,'weight')
     # nx.draw_networkx_edge_labels(G, pos)
+
     plt.savefig(FILE_DIRECTORY_PREFIX + "this.png")
-    plt.show()
+    #plt.show()
 
 def store_info(G,k):
     print('\nNext Test:\n')
@@ -146,8 +202,8 @@ def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, pa
 
 
 #main function, used for calling things
-def main():
-    runTests()
+def main(num_seeds, k, criticality):
+    runTests(num_seeds, k, criticality)
 
-if __name__== "__main__":
-  main()
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2], sys.argv[3])
