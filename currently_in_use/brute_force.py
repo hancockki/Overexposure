@@ -2,9 +2,9 @@ import networkx as nx
 import itertools
 from itertools import combinations
 DEBUG = False # DEBUG --> do (or not) DEBUG print statments (will delete these later bc makes code look messy, but left for now)
+
 '''
 Brute force algorithm used to check if tree decomposition is working properly
-
 @params:
     G --> the cluster graph we are seeding from
     k --> the number of clusters we are seeding

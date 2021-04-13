@@ -325,14 +325,12 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False)
                             intersection.add(node1)
                             intersection.add(node2)
                 '''
-
                 weight = len(intersection)
                 if len(rej_nodes) > 0:
                     G_cluster.add_edge(clusterNum, clusterNum2, weight=weight, rej_nodes=intersection)
                 if removeCycles:
                     try:
                         while len(nx.find_cycle(G_cluster)) > 0:
-                            print("staring while")
                             cycle = nx.find_cycle(G_cluster)
                             print("cycle was found in graph, oh no", cycle)
                             rej_nodes_repeat = []
@@ -346,7 +344,7 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False)
                                         if node in rej_nodes_repeat:
                                             print(rej_nodes)
                                             G_cluster.remove_edge(edge[0], edge[1])
-                                            print("already saw" , node ," so removed edge: ", edge[0], edge[1])
+                                            #print("already saw" , node ," so removed edge: ", edge[0], edge[1])
                                             removed = True
                                         else:
                                             rej_nodes_repeat.append(node)
