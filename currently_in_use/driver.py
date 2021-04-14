@@ -54,6 +54,8 @@ import openpyxl
 import xlwt
 import cluster_linear_program as lp
 from datetime import datetime
+import networkx as nx
+import bipartite_approx_algs as baa
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
 FILE_DIRECTORY_PREFIX = "currently_in_use/tests/"
@@ -82,6 +84,30 @@ Come up with an experiment design based on papers that we've read, then see how 
     We want to save the graph and run tests based on that
 """
 
+def get_graph(graph_type, num_nodes, k, criticality):
+    G_cluster = False
+    if graph_type == "cluster_no_cycle":
+        while G_cluster == False:
+            G = nx.random_tree(num_nodes)
+            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, k, True)
+    elif graph_type == "cluster":
+        while G_cluster == False:
+            G = nx.random_tree(num_nodes)
+            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, k, False)
+    elif graph_type == "Erdos-Renyi":
+        while G_cluster == False:
+            G = nx.erdos_renyi_graph(num_nodes, 0.1)
+            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, k, True)
+    elif graph_type == "Barabasi-Alber":
+        while G_cluster == False:
+            G = nx.barabasi_albert_graph(num_nodes, 3)
+            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, k, True)
+    elif graph_type == "Watts-Strogatz":
+        while G_cluster == False:
+            G = nx.watts_strogatz_graph(num_nodes, 3, 0.5)
+            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, k, True)
+    return G_cluster
+
 """
 Driver for all of our algorithms.
 @params:
@@ -91,15 +117,13 @@ Driver for all of our algorithms.
     criticality --> criticality threshold for nodes in the original graph.
     Nodes above this value will be accepting
 """
-def runTests(num_nodes, k, criticality):
+def runTests(num_nodes, k, criticality, graph_type):
     #create cluster graph
-    G = False #initialize to false, when we get a graph that satisfies the requirements
+    G = get_graph(graph_type, num_nodes, k, criticality) #initialize to false, when we get a graph that satisfies the requirements
+
     #this will be true
     #TODO: commented out. Used when we want to create a cluster graph without an original graph
     #max_weight = 5
-    while G == False:
-        G = cc.testOriginaltoCluster(num_nodes, criticality, k)
-        print("G is ", G)
     #TODO: commented out. Comment out the above 3 lines and uncomment this to create a tree cluster
     #graph without starting with the original. Useful for testing.
     #G = cc.createClusterGraph(num_nodes, max_weight)
@@ -126,12 +150,14 @@ def runTests(num_nodes, k, criticality):
     #run bipartite linear program
     bipartite = mbg.graph_to_bipartite(G)
     payoff_blp = blp.solve_lp(bipartite, k)
-
+    payoff_greedy = baa.greedy_selection(bipartite, k)
+    baa.forward_thinking_greedy(bipartite, k)
     #write the results to excel file
     write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, num_nodes,k)
     #print cluster graph and bipartite graph
     printGraph(G)
     printBipartite(bipartite)
+    plt.show()
 
 """ Print bipartite graph using network x. Saved to file"""
 def printBipartite(bipartite):
@@ -141,12 +167,12 @@ def printBipartite(bipartite):
     nx.draw(bipartite, pos)
 
     node_labels = nx.get_node_attributes(bipartite,'weight')
+    print(node_labels)
     # do (id, weight) pair for lable instead of just weight
     for key,val in node_labels.items():
         node_labels[key] = (key,val)
     nx.draw_networkx_labels(bipartite, pos=pos, labels=node_labels)
     plt.savefig("bipartite.png")
-    plt.show()
 
 """ display cluster graph """
 def printGraph(G):
@@ -211,13 +237,20 @@ def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, pa
         i += 1
     wb.save('tests/Test_results.xlsx')
 
+def getUserInput():
+    graph_type = input("What type of graph would you like to run tests on? Options are:\n 1. Cluster graph \
+with no cycles such that no rejecting node shared by more than 2 clusters. Type cluster_no_cycle \n 2. Cluster graph \
+such that no rejecting node shared by more than 2 clusters (cycles may be present). Type cluster.\n 3.\
+Erdos-Renyi (type that). \n 4. Barabasi-Alber (type that) \n 5. Watts-Strogatz (type that)\n")
+    return graph_type
 
 #main function, used for calling things
 def main(num_seeds, k, criticality):
     num_seeds = int(num_seeds)
     k = int(k)
     criticality = float(criticality)
-    runTests(num_seeds, k, criticality)
+    graph_type = getUserInput()
+    runTests(num_seeds, k, criticality, graph_type)
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2], sys.argv[3])

@@ -205,7 +205,7 @@ From each node in the nodeList, try to label its cluster. This will return 0 for
 from the (arbitrary) canonical node in its cluster.
 We then select a seed set of up to (not always, depending on the composition of the graph) k source nodes.
 """
-def buildClusteredSet(G, threshold, thirdAlgorithm=False):
+def buildClusteredSet(G, threshold, removeCycles, thirdAlgorithm=False):
     nodeList = G.nodes()
     seedSet = []
     clusterCount = 0
@@ -244,7 +244,7 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
                     sharedRejectingNodes[rejNode] = 1
         print("\nMap rejecting nodes to clusters:\n", sharedRejectingNodes)
 
-    make_cluster_edge(G_cluster, G, rejectingNodeDict, True)    
+    make_cluster_edge(G_cluster, G, rejectingNodeDict, removeCycles)    
     return G_cluster
 
 """
@@ -300,7 +300,7 @@ that share rejecting nodes
     G_cluster -> cluster graph whose edge is being labelled
     rejectingNodesDict -> rejecting node dictionary
 """
-def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False):
+def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles):
     if DEBUG: print("rej nodes dictioary", rejectingNodeDict)
     for clusterNum, rejNodes in rejectingNodesDict.items():
         for clusterNum2, rejNodes2 in rejectingNodesDict.items():
@@ -370,15 +370,14 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False)
 #input -- n, number of nodes in random graph
 #           c, criticality
 #           k, number of clusters to seed
-def testOriginaltoCluster(n, c, k):
-    G_test = nx.random_tree(n)
-    setAllNodeAttributes(G_test)
-    showOriginalGraph(G_test, c)
-    saveOriginalGraph(G_test, c)
-    G_cluster = buildClusteredSet(G_test, c)
+def testOriginaltoCluster(G, n, c, k, removeCycles):
+    setAllNodeAttributes(G)
+    showOriginalGraph(G, c)
+    saveOriginalGraph(G, c)
+    G_cluster = buildClusteredSet(G, c, removeCycles)
     if G_cluster == False:
         print("DIDNT WORK")
-        clearVisitedNodesAndDictionaries(G_test)
+        clearVisitedNodesAndDictionaries(G)
         return False
     '''
     f = open("make_matrix.txt", "a")
