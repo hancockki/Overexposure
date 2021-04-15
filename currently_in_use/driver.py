@@ -53,12 +53,13 @@ import sys
 import openpyxl
 import xlwt
 import cluster_linear_program as lp
+import timeit
 from datetime import datetime
 import networkx as nx
 import bipartite_approx_algs as baa
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
-FILE_DIRECTORY_PREFIX = "currently_in_use/"
+FILE_DIRECTORY_PREFIX = ""
 
 #TODO: allow user to type in how many nodes they want in the graph
 #TODO: timestamp each graph with when you ran it
@@ -86,6 +87,7 @@ Come up with an experiment design based on papers that we've read, then see how 
 
 def get_graph(graph_type, num_nodes, k, criticality):
     G_cluster = False
+    G = False
     if graph_type == "cluster_no_cycle":
         while G_cluster == False:
             G = nx.random_tree(num_nodes)
@@ -96,7 +98,7 @@ def get_graph(graph_type, num_nodes, k, criticality):
             G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, k, False)
     elif graph_type == "Erdos-Renyi":
         while G_cluster == False:
-            G = nx.erdos_renyi_graph(num_nodes, 0.1)
+            G = nx.erdos_renyi_graph(num_nodes, 0.05)
             G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, k, True)
     elif graph_type == "Barabasi-Alber":
         while G_cluster == False:
@@ -106,7 +108,10 @@ def get_graph(graph_type, num_nodes, k, criticality):
         while G_cluster == False:
             G = nx.watts_strogatz_graph(num_nodes, 3, 0.5)
             G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, k, True)
-    return G_cluster
+    else:
+        print("Try again, no graph type specified or spelled wrong")
+        exit(0)
+    return G_cluster, G
 
 """
 Driver for all of our algorithms.
@@ -119,7 +124,7 @@ Driver for all of our algorithms.
 """
 def runTests(num_nodes, k, criticality, graph_type):
     #create cluster graph
-    G = get_graph(graph_type, num_nodes, k, criticality) #initialize to false, when we get a graph that satisfies the requirements
+    G, original = get_graph(graph_type, num_nodes, k, criticality) #initialize to false, when we get a graph that satisfies the requirements
 
     #this will be true
     #TODO: commented out. Used when we want to create a cluster graph without an original graph
@@ -129,32 +134,62 @@ def runTests(num_nodes, k, criticality, graph_type):
     #G = cc.createClusterGraph(num_nodes, max_weight)
     
     #compute payoff for greedy DP
+    start = timeit.default_timer()
     max_val_greedyDP, seedset = greedy.greedyDP(G, G.number_of_nodes(), k)
+    stop = timeit.default_timer()
+    runtime_greedy_DP = stop - start
+
     store_info(G,k)
     print("\nGreedy DP Payoff: ", max_val_greedyDP)
         
     #compute payoff for most basic greedy algorithm
+    start = timeit.default_timer()
     greedy_payoff, greedy_seedset = greedy.kHighestClusters(G, k)
+    stop = timeit.default_timer()
+    runtime_greedy = stop - start
     print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", greedy_payoff)
 
     #compute payoff for recursive DP
+    start = timeit.default_timer()
     payoff_root, payoff_no_root = dp.runRecursiveDP(G, k)
+    stop = timeit.default_timer()
+    runtime_recursive_DP = stop - start
     print("Recursive DP payoff: \n Root: ", payoff_root, "\n No Root: ", payoff_no_root)
 
     #run linear program
+    start = timeit.default_timer()
     payoff_lp = lp.lp_setup(G, k)
+    stop = timeit.default_timer()
+    runtime_LP = stop - start
+
     #run bipartite linear program
     bipartite = mbg.graph_to_bipartite(G)
+    start = timeit.default_timer()
     payoff_blp = blp.solve_lp(bipartite, k)
+    stop = timeit.default_timer()
+    runtime_bipartite_LP = stop - start
+
+    start = timeit.default_timer()
     payoff_greedy = baa.greedy_selection(bipartite, k)
-    baa.forward_thinking_greedy(bipartite, k)
-    #compute payoff using brute force algorithm --> uncomment out if you want to run
-    best_payoff_selection,best_payoff = bf.computePayoff(bipartite, k)
-    print("Brute Force payoff: ", best_payoff_selection, best_payoff)
+    stop = timeit.default_timer()
+
+    # #compute payoff using brute force algorithm --> uncomment out if you want to run
+    # best_payoff_selection,best_payoff = bf.computePayoff(bipartite, k)
+    # print("Brute Force payoff: ", best_payoff_selection, best_payoff)
+
+    runtime_greedy_bipartite = stop - start
+
+    start = timeit.default_timer()
+    payoff_forward_thinking = baa.forward_thinking_greedy(bipartite, k)
+    stop = timeit.default_timer()
+    runtime_forward_thinking = stop - start
 
     #write the results to excel file
-    write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, num_nodes,k)
+    write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, \
+        payoff_greedy, payoff_forward_thinking, runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
+        runtime_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, num_nodes,k, graph_type, criticality)
     #print cluster graph and bipartite graph
+    cc.showOriginalGraph(original, criticality)
     printGraph(G)
     printBipartite(bipartite)
     plt.show()
@@ -224,18 +259,31 @@ For example, 0 2 1 -22 indicates that there is an edge (0,2) with weight 1, and 
                 pass
 
 """ Write results to an excel sheet stored in the currently_in_use/tests folder """
-def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, n, k):
-    wb = openpyxl.load_workbook(FILE_DIRECTORY_PREFIX + 'tests/Test_results.xlsx')
-    ws = wb.active
+def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, \
+    payoff_bipartite_greedy, payoff_forward_thinking, runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
+    runtime_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, n, k, graph_type, criticality):
+    wb = openpyxl.load_workbook('tests/Test_results.xlsx')
+    sheets = wb.sheetnames
+    data = wb[sheets[0]]
+    runtimes = wb[sheets[1]]
     timestamp = datetime.timestamp(datetime.now())
     date = str(datetime.fromtimestamp(timestamp))
-    row = ws.max_row+1
-    items_to_add = [n, k, date, max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp]
+    row = data.max_row+1
+    row2 = runtimes.max_row+1
+    data_items_to_add = [n, k, criticality, graph_type, date, max_val_greedyDP, greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, payoff_bipartite_greedy, payoff_forward_thinking]
+    runtime_data_to_add = [n, k, criticality, graph_type, date, runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
+    runtime_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking]
     i = 1
-    for item in items_to_add:
-        c1 = ws.cell(row = row, column = i)
+    j = 1
+    for item in data_items_to_add:
+        c1 = data.cell(row = row, column = i)
         c1.value = item
         i += 1
+    for item in runtime_data_to_add:
+        c1 = runtimes.cell(row = row2, column = j)
+        c1.value = item
+        j += 1
+    
     wb.save(FILE_DIRECTORY_PREFIX + 'tests/Test_results.xlsx')
 
 def getUserInput():
