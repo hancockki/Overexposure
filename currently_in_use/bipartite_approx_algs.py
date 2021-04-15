@@ -25,7 +25,7 @@ def greedy_selection(G, k):
                 print(nodes)
                 num_neg += 1
                 edges.remove(nodes)
-        print("Num edges: ", num_neg, " Max weight node: ", max_weight_node)
+        #print("Num edges: ", num_neg, " Max weight node: ", max_weight_node)
         #G.remove_node(max_weight_node)
         payoff += max_weight - num_neg
         max_weight = 0
@@ -34,13 +34,14 @@ def greedy_selection(G, k):
     return payoff
 
 def forward_thinking_greedy(G,k):
-    payoff = 0
     max_weight_node = None
+    payoff = 0
     max_weight = 0
     weight_total = 0
     weight_dict = dict(nx.get_node_attributes(G,'weight'))
-    print(weight_dict)
+    #print(weight_dict)
     edges = list(G.edges())
+    rej_nodes = []
     neg_nodes1 = set()
     neg_nodes2 = set()
     for i in range(k):
@@ -62,19 +63,28 @@ def forward_thinking_greedy(G,k):
                         neg_nodes2.add(nodes[0])
                 weight2 = value2
                 weight_total = weight + weight2 - len(neg_nodes1) - len(neg_nodes2)
+                #print("Nodes: ", node1, node2)
                 #print("Neg Nodes: ", neg_nodes1, neg_nodes2, "lengths: ", len(neg_nodes2), len(neg_nodes1), "Weights:", weight, weight2, " Total: ", weight_total)
                 if weight_total > max_weight:
-                    #print("New max weight node: ", node1)
+                    print("New max weight node: ", node1)
                     max_weight = weight_total
-                    max_weight_node = node2
-                neg_nodes1 = set()
+                    max_weight_node = node1
+                #print("Neg nodes: ", neg_nodes2)
+                neg_nodes2 = set()
                 weight_total = 0
-            neg_nodes2 = set()
-        print("weight total: ", weight_total, " Node: ", max_weight_node)
-        payoff += max_weight
+            #print("Neg nodes outer: ", neg_nodes1)
+            neg_nodes1 = set()
+        if max_weight_node is not None:
+            payoff += weight_dict[max_weight_node]
         for nodes in edges:
             if nodes[1] == max_weight_node:
+                payoff -= 1
                 edges.remove(nodes)
+                rej_nodes.append(nodes[0])
+        for nodes in edges:
+            if nodes[0] in rej_nodes:
+                edges.remove(nodes)
+        #print("payoff: ", payoff, " Node: ", max_weight_node)
         #G.remove_node(max_weight_node)
         weight_dict[max_weight_node] = -1000
         max_weight = 0

@@ -372,7 +372,7 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles):
 #           k, number of clusters to seed
 def testOriginaltoCluster(G, n, c, k, removeCycles):
     setAllNodeAttributes(G)
-    showOriginalGraph(G, c)
+    #showOriginalGraph(G, c)
     saveOriginalGraph(G, c)
     G_cluster = buildClusteredSet(G, c, removeCycles)
     if G_cluster == False:
