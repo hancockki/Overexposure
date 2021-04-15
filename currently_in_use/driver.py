@@ -59,7 +59,7 @@ import networkx as nx
 import bipartite_approx_algs as baa
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
-FILE_DIRECTORY_PREFIX = ""
+FILE_DIRECTORY_PREFIX = "currently_in_use/"
 
 #TODO: allow user to type in how many nodes they want in the graph
 #TODO: timestamp each graph with when you ran it
@@ -173,9 +173,9 @@ def runTests(num_nodes, k, criticality, graph_type):
     payoff_greedy = baa.greedy_selection(bipartite, k)
     stop = timeit.default_timer()
 
-    # #compute payoff using brute force algorithm --> uncomment out if you want to run
-    # best_payoff_selection,best_payoff = bf.computePayoff(bipartite, k)
-    # print("Brute Force payoff: ", best_payoff_selection, best_payoff)
+    #compute payoff using brute force algorithm --> uncomment out if you want to run
+    best_payoff_selection,best_payoff = bf.computePayoff(bipartite, k)
+    print("Brute Force payoff: ", best_payoff_selection, best_payoff)
 
     runtime_greedy_bipartite = stop - start
 
@@ -262,7 +262,7 @@ For example, 0 2 1 -22 indicates that there is an edge (0,2) with weight 1, and 
 def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, \
     payoff_bipartite_greedy, payoff_forward_thinking, runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
     runtime_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, n, k, graph_type, criticality):
-    wb = openpyxl.load_workbook('tests/Test_results.xlsx')
+    wb = openpyxl.load_workbook(FILE_DIRECTORY_PREFIX + 'tests/Test_results.xlsx')
     sheets = wb.sheetnames
     data = wb[sheets[0]]
     runtimes = wb[sheets[1]]

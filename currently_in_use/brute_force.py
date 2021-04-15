@@ -42,12 +42,12 @@ def computePayoff(G, k):
             for reject_edge in reject_edges:
                 # iterating in reverse order so edges are not skipped
                 # ex if you have a list [0,1,2] and remove 1, you will never look at 2 because index 1 has already been iterated over
-                for i in reversed(range(len(edges))):
+                for edge in reversed(edges):
                     reject_used = False
                     # remove all edges that contain a rejecting node that the cluster touches, so that they cannot be double counted 
-                    if edges[i][0] == reject_edge[0]:
-                        if DEBUG: print('remove edge',edges[i])
-                        edges.remove(edges[i])
+                    if edge[0] == reject_edge[0]:
+                        if DEBUG: print('remove edge',edge)
+                        edges.remove(edge)
                         reject_used = True
                 # subtract from payoff if the rejecting edge was in the list of available edges (see if it was used)
                 if reject_used: num_neg += 1
