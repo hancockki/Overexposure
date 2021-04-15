@@ -373,7 +373,7 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles):
 def testOriginaltoCluster(G, n, c, k, removeCycles):
     setAllNodeAttributes(G)
     showOriginalGraph(G, c)
-    saveOriginalGraph(G, c, "tests/original_graph.txt")
+    saveOriginalGraph(G, c, "currently_in_use/tests/original_graph.txt")
     G_cluster = buildClusteredSet(G, c, removeCycles)
     if G_cluster == False:
         print("DIDNT WORK")

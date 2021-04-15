@@ -43,8 +43,8 @@ def solve_lp(G,k):
     x_keys = []
     y_keys = []
     weight_dict = nx.get_node_attributes(G,'weight')
-    print("Weight dictionary: ", weight_dict)
-    print("\nNodes in bipartite \n", G.nodes(), "\nOut edges: \n", G.out_edges())
+    # print("Weight dictionary: ", weight_dict)
+    # print("\nNodes in bipartite \n", G.nodes(), "\nOut edges: \n", G.out_edges())
     for edge in G.edges():
         if edge[0] not in y_keys:
             y_keys.append(edge[0])
@@ -57,7 +57,7 @@ def solve_lp(G,k):
     #add x and y variables
     x = LpVariable.dicts("x", x_keys, lowBound=0, cat="Integer")
     y = LpVariable.dicts("y", y_keys, lowBound=0, cat="Integer")
-    print("X_keys: ", x_keys, x, "\nY_keys: ", y_keys, y)
+    # print("X_keys: ", x_keys, x, "\nY_keys: ", y_keys, y)
 
     # create lp with LpProblem
     lp = LpProblem("Bipartite_ILP", LpMaximize)

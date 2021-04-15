@@ -58,7 +58,7 @@ import networkx as nx
 import bipartite_approx_algs as baa
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
-FILE_DIRECTORY_PREFIX = ""
+FILE_DIRECTORY_PREFIX = "currently_in_use/"
 
 #TODO: allow user to type in how many nodes they want in the graph
 #TODO: timestamp each graph with when you ran it
@@ -141,18 +141,17 @@ def runTests(num_nodes, k, criticality, graph_type):
     payoff_root, payoff_no_root = dp.runRecursiveDP(G, k)
     print("Recursive DP payoff: \n Root: ", payoff_root, "\n No Root: ", payoff_no_root)
 
-    #compute payoff using brute force algorithm --> uncomment out if you want to run
-    #best_payoff_selection,best_payoff = bf.computePayoff(G, k)
-    #print("Brute Force payoff: ", best_payoff_selection, best_payoff)
-
     #run linear program
     payoff_lp = lp.lp_setup(G, k)
     #run bipartite linear program
     bipartite = mbg.graph_to_bipartite(G)
-    printGraph(G)
     payoff_blp = blp.solve_lp(bipartite, k)
     payoff_greedy = baa.greedy_selection(bipartite, k)
     baa.forward_thinking_greedy(bipartite, k)
+    #compute payoff using brute force algorithm --> uncomment out if you want to run
+    best_payoff_selection,best_payoff = bf.computePayoff(bipartite, k)
+    print("Brute Force payoff: ", best_payoff_selection, best_payoff)
+
     #write the results to excel file
     write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, num_nodes,k)
     #print cluster graph and bipartite graph
@@ -201,11 +200,12 @@ def printGraph(G):
 results output in the excel sheet are inaccurate / do not make sense """
 def store_info(G,k):
     print('\nNext Test:\n')
-    with open("tests/cluster_graph_details.txt", 'w') as graph_info:
+    with open(FILE_DIRECTORY_PREFIX + "tests/cluster_graph_details.txt", 'w') as graph_info:
         timestamp = datetime.timestamp(datetime.now())
         date = datetime.fromtimestamp(timestamp)
-        graph_info.write("Prints each node weight on a new line followed by each edge. \n \
-Ie the first number printed is the weight of node 0. Then prints each edge followed by its weight and the rejecting nodes.\n \
+        graph_info.write('c\n')
+        graph_info.write("# Prints each node weight on a new line followed by each edge. \n# \
+Ie the first number printed is the weight of node 0. Then prints each edge followed by its weight and the rejecting nodes.\n# \
 For example, 0 2 1 -22 indicates that there is an edge (0,2) with weight 1, and the rejecting node in that edge is node 22. \n")
         graph_info.write("# Timestamp: " + str(date) + "\n")
         graph_info.write("# Nodes: " + str(G.number_of_nodes()) + "\n")
@@ -225,7 +225,7 @@ For example, 0 2 1 -22 indicates that there is an edge (0,2) with weight 1, and 
 
 """ Write results to an excel sheet stored in the currently_in_use/tests folder """
 def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, n, k):
-    wb = openpyxl.load_workbook('tests/Test_results.xlsx')
+    wb = openpyxl.load_workbook(FILE_DIRECTORY_PREFIX + 'tests/Test_results.xlsx')
     ws = wb.active
     timestamp = datetime.timestamp(datetime.now())
     date = str(datetime.fromtimestamp(timestamp))
@@ -236,7 +236,7 @@ def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, pa
         c1 = ws.cell(row = row, column = i)
         c1.value = item
         i += 1
-    wb.save('tests/Test_results.xlsx')
+    wb.save(FILE_DIRECTORY_PREFIX + 'tests/Test_results.xlsx')
 
 def getUserInput():
     graph_type = input("What type of graph would you like to run tests on? Options are:\n 1. Cluster graph \
@@ -253,5 +253,6 @@ def main(num_seeds, k, criticality):
     graph_type = getUserInput()
     runTests(num_seeds, k, criticality, graph_type)
 
-if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
+# if __name__ == "__main__":
+#     main(sys.argv[1], sys.argv[2], sys.argv[3])
+main(15,3,0.5)

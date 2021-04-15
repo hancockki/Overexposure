@@ -188,9 +188,9 @@ def create_edge(attrib_info):
         elif i == 3: # create a set with reject node (if available)
             temp = set()
             temp.add(int(attrib_info[i]))
-            G.edges[edge]['data'] = temp
+            G.edges[edge]['rej_nodes'] = temp
         elif i > 3: # add to reject set if more than one reject is present in an edge
-            G.edges[edge]['data'].add(int(attrib_info[i]))
+            G.edges[edge]['rej_nodes'].add(int(attrib_info[i]))
 
 # def main():
 #     crit, T = create_from_file(FILE_DIRECTORY_PREFIX + "testing_files/er0.txt")
