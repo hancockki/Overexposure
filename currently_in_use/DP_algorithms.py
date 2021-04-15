@@ -68,7 +68,8 @@ def recursiveDP(G, tree, k, source, storePayoff, witness):
 
         #print(neighbors_list, "NEIGHBORS LIST")
         num_children = len(neighbors_list)
-        partitions_list = list(partitions(k, num_children)) #seed all k seeds among the child nodes
+        #partitions_list = list(partitions(k, num_children)) #seed all k seeds among the child nodes
+        partitions_list = [[int(k/num_children) for i in range(num_children)]]
         maxSum = float("-inf")
         opt_allocation = None
         opt_take_child = None
