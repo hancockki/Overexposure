@@ -206,7 +206,7 @@ def tree_decomp_DP(G, tree, k, source, storePayoffCluster, storePayoffTree, reje
                     neighbors = list(G.neighbors(node)) # get the edge weights, don't want to double count
                     for neighbor in neighbors: # we loop through all the neighbors and look to see if we have already accounted for this rej node
                         print(G.get_edge_data(node, neighbor))
-                        for rejecting_nodes in G.get_edge_data(node, neighbor)['data']:
+                        for rejecting_nodes in G.get_edge_data(node, neighbor)['rej_nodes']:
                             if rejecting_nodes in rejecting:
                                 continue
                             else:

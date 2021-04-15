@@ -2,9 +2,9 @@ import networkx as nx
 import itertools
 from itertools import combinations
 DEBUG = False # DEBUG --> do (or not) DEBUG print statments (will delete these later bc makes code look messy, but left for now)
+
 '''
 Brute force algorithm used to check if tree decomposition is working properly
-
 @params:
     G --> the cluster graph we are seeding from
     k --> the number of clusters we are seeding
@@ -38,7 +38,7 @@ def computePayoff(G, k):
                 if edge not in used_negative_edges:
                     used_negative_edges.add(edge)
                     try:
-                        reject_node_set = G.edges[edge]['data']
+                        reject_node_set = G.edges[edge]['rej_nodes']
                         for reject_node in reject_node_set:
                             if reject_node in used_reject_nodes: # don't subtract from payoff if rejecting node already been counted
                                 payoff += 1
