@@ -301,6 +301,6 @@ def main(num_seeds, k, criticality):
     graph_type = getUserInput()
     runTests(num_seeds, k, criticality, graph_type)
 
-# if __name__ == "__main__":
-#     main(sys.argv[1], sys.argv[2], sys.argv[3])
-main(15,3,0.5)
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2], sys.argv[3])
+# main(15,3,0.5)
