@@ -1,5 +1,6 @@
 import networkx as nx
 
+# input is a cluster graph
 def graph_to_bipartite(G):
     bipartite_graph = nx.DiGraph()
     for edge in G.edges.data():

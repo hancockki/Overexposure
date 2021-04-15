@@ -220,7 +220,7 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
         if DEBUG: print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
         G_cluster.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
 
-    make_cluster_edge(G_cluster, G, rejectingNodeDict, True)    
+    make_cluster_edge(G_cluster, G, rejectingNodeDict, False)    
     return G_cluster
 
 def computeNegPayoff(G, nodeNum):
@@ -344,9 +344,9 @@ def testOriginaltoCluster(n, c, k):
     G_test = nx.random_tree(n)
     setAllNodeAttributes(G_test)
     showOriginalGraph(G_test, c)
-    saveOriginalGraph(G_test, c)
+    saveOriginalGraph(G_test, c, "tests/original_graph.txt")
     G_cluster = buildClusteredSet(G_test, c)
-    f = open("currently_in_use/make_matrix.txt", "a")
+    f = open("make_matrix.txt", "a")
     f.write("cluster dictionary:" + str(clusterDict) + "\n")
     f.write("rej node dictionary: " + str(rejectingNodeDict) + "\n")
     f.write("edge data:" + str(G_cluster.edges.data()) + "\n")
@@ -373,8 +373,8 @@ The format used here is described in create_graph_from_file class
     G -> original graph
     c -> criticality (used for show purposes and creating cluster)
 '''
-def saveOriginalGraph(G, c):
-    with open("currently_in_use/original_graph.txt", 'w') as graph_info:
+def saveOriginalGraph(G, c, filename):
+    with open(filename, 'w') as graph_info:
         timestamp = datetime.timestamp(datetime.now())
         date = datetime.fromtimestamp(timestamp)
         graph_info.write("o\n")
@@ -396,7 +396,7 @@ However, we are now doing linear programming using python.
 
 """
 def makeMatrix(G, n):
-    f = open("currently_in_use/make_matrix.txt", "w")
+    f = open("make_matrix.txt", "w")
     matrix = [[0] * n for _ in range(n)] #store payoff
     node_weights = nx.get_node_attributes(G, name='weight')
     #print("weight of nodes is:", weight)
@@ -418,7 +418,7 @@ def makeMatrix(G, n):
         fullStr = ','.join([str(elem) for elem in matrix[i] ])
         f.write(fullStr + "\n")
     f.close()
-    with open('currently_in_use/make_matrix.csv', mode='w', newline='') as make_matrix:
+    with open('make_matrix.csv', mode='w', newline='') as make_matrix:
         matrix_writer = csv.writer(make_matrix, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for i in range(n):
             matrix_writer.writerow(matrix[i])

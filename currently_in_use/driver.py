@@ -14,7 +14,7 @@ import linear_program as lp
 from datetime import datetime
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
-FILE_DIRECTORY_PREFIX = "currently_in_use/tests/"
+FILE_DIRECTORY_PREFIX = ""
 
 #TODO: allow user to type in how many nodes they want in the graph
 #TODO: timestamp each graph with when you ran it
@@ -46,9 +46,10 @@ def runTests():
     num_nodes = 50
     criticality = 0.7
     max_weight = 5
-    G = cc.testOriginaltoCluster(num_nodes, criticality, k)
+    #G = cc.testOriginaltoCluster(num_nodes, criticality, k)
     #G = cc.createClusterGraph(num_nodes, max_weight)
-    #c, G = cff.create_from_file(FILE_DIRECTORY_PREFIX + "original_graph.txt")
+    c, G_OG = cff.create_from_file(FILE_DIRECTORY_PREFIX + "testing_files/er0.txt") #original_graph.txt
+    G = cc.buildClusteredSet(G_OG,c)
     #cc.showOriginalGraph(G,c)
     #plt.show()
     
@@ -73,6 +74,7 @@ def runTests():
     payoff_lp = lp.lp_setup(G, k)
 
     bipartite = mbg.graph_to_bipartite(G)
+    printGraph(G)
     payoff_blp = blp.solve_lp(bipartite, k)
 
     write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, num_nodes,k)
@@ -107,7 +109,7 @@ def printGraph(G):
 
 def store_info(G,k):
     print('\nNext Test:\n')
-    with open(FILE_DIRECTORY_PREFIX + "cluster_graph_details.txt", 'w') as graph_info:
+    with open(FILE_DIRECTORY_PREFIX + "tests/cluster_graph_details.txt", 'w') as graph_info:
         timestamp = datetime.timestamp(datetime.now())
         date = datetime.fromtimestamp(timestamp)
         graph_info.write("c\n")
@@ -131,7 +133,7 @@ def store_info(G,k):
     #cc.makeMatrix(G,k)
 
 def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, payoff_lp, payoff_blp, n, k):
-    wb = openpyxl.load_workbook('currently_in_use/tests/Test_results.xlsx')
+    wb = openpyxl.load_workbook(FILE_DIRECTORY_PREFIX + 'tests/Test_results.xlsx')
     ws = wb.active
     timestamp = datetime.timestamp(datetime.now())
     date = str(datetime.fromtimestamp(timestamp))
@@ -142,7 +144,7 @@ def write_results(max_val_greedyDP,greedy_payoff,payoff_root, payoff_no_root, pa
         c1 = ws.cell(row = row, column = i)
         c1.value = item
         i += 1
-    wb.save('currently_in_use/tests/Test_results.xlsx')
+    wb.save(FILE_DIRECTORY_PREFIX + 'tests/Test_results.xlsx')
 
 
 #main function, used for calling things
