@@ -61,10 +61,10 @@ import bipartite_approx_algs as baa
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
 FILE_DIRECTORY_PREFIX = "currently_in_use/tests/"
 
-#TODO: allow user to type in how many nodes they want in the graph
-#TODO: timestamp each graph with when you ran it
+#TODO: run more rigorous tests
+#TODO: fix logging output to take max of root and no root
+#TODO: work on paper, write analysis on run times/approximation factor
 #TODO: tree decomposition algorithm
-#TODO: put graphs in a format that our files can read (Laura)
 
 """
 Experiment Design:

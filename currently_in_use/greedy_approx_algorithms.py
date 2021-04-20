@@ -12,7 +12,8 @@ def computeNegPayoff(G, nodeNum):
     return nodeWeight
     
 """
-Compute the payoff for the greedy algorithm
+Compute the payoff for the greedy algorithm.
+Must have assumption 1
 """
 def computePayoffGreedy(G, k_highest):
     payoff = 0
