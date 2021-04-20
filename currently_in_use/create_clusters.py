@@ -372,8 +372,8 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles):
 #           k, number of clusters to seed
 def testOriginaltoCluster(G, n, c, k, removeCycles):
     setAllNodeAttributes(G)
-    #showOriginalGraph(G, c)
-    saveOriginalGraph(G, c)
+    showOriginalGraph(G, c)
+    saveOriginalGraph(G, c, "currently_in_use/tests/original_graph.txt")
     G_cluster = buildClusteredSet(G, c, removeCycles)
     if G_cluster == False:
         print("DIDNT WORK")
@@ -408,8 +408,8 @@ The format used here is described in create_graph_from_file class
     G -> original graph
     c -> criticality (used for show purposes and creating cluster)
 '''
-def saveOriginalGraph(G, c):
-    with open("original_graph.txt", 'w') as graph_info:
+def saveOriginalGraph(G, c, filename):
+    with open(filename, 'w') as graph_info:
         timestamp = datetime.timestamp(datetime.now())
         date = datetime.fromtimestamp(timestamp)
         graph_info.write("o\n")
@@ -431,7 +431,7 @@ However, we are now doing linear programming using python.
 
 """
 def makeMatrix(G, n):
-    f = open("currently_in_use/make_matrix.txt", "w")
+    f = open("make_matrix.txt", "w")
     matrix = [[0] * n for _ in range(n)] #store payoff
     node_weights = nx.get_node_attributes(G, name='weight')
     #print("weight of nodes is:", weight)
@@ -453,7 +453,7 @@ def makeMatrix(G, n):
         fullStr = ','.join([str(elem) for elem in matrix[i] ])
         f.write(fullStr + "\n")
     f.close()
-    with open('currently_in_use/make_matrix.csv', mode='w', newline='') as make_matrix:
+    with open('make_matrix.csv', mode='w', newline='') as make_matrix:
         matrix_writer = csv.writer(make_matrix, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for i in range(n):
             matrix_writer.writerow(matrix[i])

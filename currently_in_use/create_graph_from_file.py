@@ -92,7 +92,7 @@ COMMENT = '#' # acts as comment character. will be ignored if read in file
 CLUSTER = 'c' # identify file as cluster graph format
 ORIGINAL = 'o' # identify file as originial graph format
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
-FILE_DIRECTORY_PREFIX = "currently_in_use/"
+FILE_DIRECTORY_PREFIX = ""
 
 global G
 G = nx.Graph()
@@ -139,6 +139,8 @@ def create_original(lines):
                 # create a node!
                 G.add_node(i-end_preamble)
                 G.nodes[i-end_preamble]['criticality'] = float(nums[0])
+                G.nodes[i-end_preamble]['visited'] = False
+                G.nodes[i-end_preamble]['cluster'] = -1
             else:
                 create_edge(nums)
         else:
@@ -186,21 +188,20 @@ def create_edge(attrib_info):
         elif i == 3: # create a set with reject node (if available)
             temp = set()
             temp.add(int(attrib_info[i]))
-            G.edges[edge]['data'] = temp
+            G.edges[edge]['rej_nodes'] = temp
         elif i > 3: # add to reject set if more than one reject is present in an edge
-            G.edges[edge]['data'].add(int(attrib_info[i]))
-'''
-def main():
-    T = create_from_file(FILE_DIRECTORY_PREFIX + "original_graph.txt")
-    c = 0.5
-    color_map = []
-    for nodeID in T.nodes():
-        if T.nodes[nodeID]['criticality'] >= c:
-            color_map.append('red')
-        else:
-            color_map.append('green')
-    plt.figure('original network')
-    nx.draw_networkx(T, node_color = color_map, pos=nx.spring_layout(T, iterations=1000), arrows=False, with_labels=True)
-    plt.show()
-main()
-'''
+            G.edges[edge]['rej_nodes'].add(int(attrib_info[i]))
+
+# def main():
+#     crit, T = create_from_file(FILE_DIRECTORY_PREFIX + "testing_files/er0.txt")
+#     c = 0.5
+#     color_map = []
+#     for nodeID in T.nodes():
+#         if T.nodes[nodeID]['criticality'] >= c:
+#             color_map.append('red')
+#         else:
+#             color_map.append('green')
+#     plt.figure('original network')
+#     nx.draw_networkx(T, node_color = color_map, pos=nx.spring_layout(T, iterations=1000), arrows=False, with_labels=True)
+#     plt.show()
+# main()
