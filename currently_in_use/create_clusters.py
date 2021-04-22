@@ -151,9 +151,11 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
                     #acceptingInThisCluster -= 1
                     rejecting += 1
                     if clusterNumber not in rejectingNodeDict:
+                        print("ADDING NEW-------------", clusterNumber)
                         rejectingNodeDict[clusterNumber] = set()
                         rejectingNodeDict[clusterNumber].add(neighbor)
                     else:
+                        print("ADDING-------------", clusterNumber)
                         rejectingNodeDict[clusterNumber].add(neighbor)
                     
                     """
@@ -213,11 +215,13 @@ def buildClusteredSet(G, threshold, removeCycles, thirdAlgorithm=False):
     #Build the clusters
     for nodeID in nodeList:
         if (G.nodes[nodeID]['criticality'] < threshold) and (G.nodes[nodeID]['cluster'] == -1):
+            print(clusterCount, "---------------------->>>>>>>>>>")
             summedNeighbors = labelClusters(G, nodeID, clusterCount, threshold, thirdAlgorithm)
             #if summedNeighbors[0] > 0:
             seedSet.append((summedNeighbors[2], summedNeighbors[0], summedNeighbors[1]))
             #print("num rejecting=", summedNeighbors[1])
             makeClusterNode(G_cluster, clusterCount, summedNeighbors[0])
+            print("rejecting node dictionary:", rejectingNodeDict)
             clusterCount += 1
     #Choose up-to-k
     
@@ -230,15 +234,17 @@ def buildClusteredSet(G, threshold, removeCycles, thirdAlgorithm=False):
             #if DEBUG: print("rejecting nodes 2,", clusterNum2, rejNodes2)
             if clusterNum != clusterNum2:
                 rejNodes_copy = rejNodes_copy - rejNodes2
-        #if DEBUG: print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
+        if DEBUG: print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
+        print("NODES: ", G_cluster.nodes())
         G_cluster.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
-    if DEBUG:
+    if removeCycles:
         sharedRejectingNodes = {}
         for clusterNum, rejNodes in rejectingNodeDict.items():
             for rejNode in rejNodes:
                 if rejNode in sharedRejectingNodes:
                     sharedRejectingNodes[rejNode] += 1
                     if sharedRejectingNodes[rejNode] > 2:
+                        print("RETURNING FALSE")
                         return False
                 else:
                     sharedRejectingNodes[rejNode] = 1
@@ -289,6 +295,7 @@ def bfs(G, node, source):
 
 #we defined a new cluster and are adding a node to the cluster graph, whose weight is the number of accepting nodes in that cluster
 def makeClusterNode(G, clusterNum, weight):
+    print("---------MAKING NODE-----------", clusterNum)
     G.add_node(clusterNum)
     G.nodes[clusterNum]['weight'] = weight
 
@@ -313,7 +320,7 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles):
                 for i in rej_nodes:
                     rej_node = -i
                     intersection.append(rej_node)
-                #print("intersection is", intersection)
+                print("intersection is", intersection)
 
                 #####   MTI: COMMENTING OUT FOR NOW. SEE COMMENT IN labelClusters(.) FUNCTION.
                 #we have to confront the situation where there are many rejecting nodes appearing in a 'line' such that we never 
@@ -336,15 +343,15 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles):
                             rej_nodes_repeat = []
                             for edge in cycle:
                                 removed = False
-                                rej_nodes = G_cluster.get_edge_data(edge[0], edge[1])['rej_nodes']
+                                #rej_nodes = G_cluster.get_edge_data(edge[0], edge[1])['rej_nodes']
                                 #print("rejecting nodes in cycle edge are: ", rej_nodes)
                                 #print("rejecting node is", data)
-                                if len(rej_nodes) == 1:
-                                    for node in rej_nodes:
+                                if len(rej_nodes) >= 1:
+                                    for node in intersection:
                                         if node in rej_nodes_repeat:
-                                            print(rej_nodes)
+                                            print(intersection)
                                             G_cluster.remove_edge(edge[0], edge[1])
-                                            #print("already saw" , node ," so removed edge: ", edge[0], edge[1])
+                                            print("already saw" , node ," so removed edge: ", edge[0], edge[1])
                                             removed = True
                                         else:
                                             rej_nodes_repeat.append(node)
@@ -355,7 +362,7 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles):
                         #print("no cycle between nodes", clusterNum, clusterNum2,)
                         pass
     components = nx.algorithms.components.connected_components(G_cluster)
-    #if DEBUG: print("Connected components: ")
+    if DEBUG: print("Connected components: ", components)
     prev = -1
     for comp in components:
         if DEBUG: print("Component: ", comp)
@@ -369,13 +376,12 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles):
 #method to test whether our input graph is correctly forming clusters, then runs dynamic programming
 #input -- n, number of nodes in random graph
 #           c, criticality
-#           k, number of clusters to seed
-def testOriginaltoCluster(G, n, c, k, removeCycles):
+def testOriginaltoCluster(G, n, c, removeCycles):
     setAllNodeAttributes(G)
     showOriginalGraph(G, c)
-    saveOriginalGraph(G, c, "currently_in_use/tests/original_graph.txt")
+    saveOriginalGraph(G, c, "tests/original_graph.txt")
     G_cluster = buildClusteredSet(G, c, removeCycles)
-    if G_cluster == False:
+    if G_cluster == False or len(G_cluster.nodes()) < 2:
         print("DIDNT WORK")
         clearVisitedNodesAndDictionaries(G)
         return False
@@ -387,6 +393,7 @@ def testOriginaltoCluster(G, n, c, k, removeCycles):
     f.write("node data:" + str(G_cluster.nodes.data()) + "\n")
     f.close()
     '''
+    clearVisitedNodesAndDictionaries(G)
     return G_cluster
 
 def showOriginalGraph(G, c):
