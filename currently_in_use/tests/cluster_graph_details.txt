@@ -2,53 +2,57 @@ c
 # Prints each node weight on a new line followed by each edge. 
 # Ie the first number printed is the weight of node 0. Then prints each edge followed by its weight and the rejecting nodes.
 # For example, 0 2 1 -22 indicates that there is an edge (0,2) with weight 1, and the rejecting node in that edge is node 22. 
-# Timestamp: 2021-04-22 13:11:22.768112
-# Nodes: 24
-# Edges: 23
+# Timestamp: 2021-05-03 18:47:11.427453
+# Nodes: 25
+# Edges: 26
+1
+6
+3
 0
 2
-5
+1
+0
+0
+0
+0
+-1
+2
+2
 4
-2
-2
-1
-1
-2
-3
-0
-5
-3
-1
-1
 0
 1
-1
+-1
 0
 1
-1
+0
+0
 0
 1
-1
-0 8 1 -66
+0
+0
+0 11 1 -12
+0 18 1 -12
 0 1 0
+0 3 0
+0 4 0
 0 6 0
 0 7 0
+0 8 0
 0 9 0
 0 10 0
+0 12 0
 0 14 0
-0 15 0
-0 17 0
-0 18 0
-0 21 0
-1 2 1 -47
-2 12 1 -75
-2 20 1 -16
-3 4 1 -43
-3 11 1 -28
-4 12 1 -89
-5 8 1 -41
-6 22 1 -26
-9 23 1 -35
-11 16 1 -5
-13 16 1 -23
-17 19 1 -24
+0 16 0
+0 19 0
+0 20 0
+0 23 0
+0 24 0
+1 5 1 -43
+1 17 1 -1
+2 11 1 -11
+4 21 1 -82
+11 18 1 -12
+12 13 1 -88
+12 15 1 -88
+13 15 1 -88
+17 22 1 -67

@@ -16,22 +16,24 @@ def create_test_graphs(criticality, num_nodes, num_links, prob_rewrite_edge, fil
     # print(round((2 * avg_num_edges) / num_nodes))
     G_ws = create_ws(num_nodes, round((2 * avg_num_edges) / num_nodes), prob_rewrite_edge)
 
-    original_graphs = [G_ba, G_er, G_ws]
+    original_graphs = [['ba', G_ba], ['er',G_er], ['ws',G_ws]]
     cluster_graphs = []
-    all_types = ["ba","er","ws"]
     total_edges = 0
-    for (G_type,G) in zip(all_types, original_graphs):
-        G_cluster = False
-        print(G, "e",G.number_of_edges(), "n",G.number_of_nodes())
-        cc.setAllNodeAttributes(G)
+    for G in original_graphs:
+        G_cluster_no_cycle = False
+        G_cluster_cycle = False
+        print("Graph Type:", G[0], "Num edges: ", G[1].number_of_edges(), "n",G[1].number_of_nodes())
+        cc.setAllNodeAttributes(G[1])
         #cc.saveOriginalGraph(G, criticality, file_prefix + G_type + str(file_suffix) + ".txt")
-        total_edges += G.number_of_edges()
+        total_edges += G[1].number_of_edges()
         #cc.showOriginalGraph(G,criticality)
         #plt.show()
-        while G_cluster == False:
-            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, True)
-        #d.printGraph(G_cluster)
-        cluster_graphs.append(G_cluster)
+        while G_cluster_no_cycle == False:
+            G_cluster_no_cycle = cc.testOriginaltoCluster(G[1], num_nodes, criticality, True, True)
+        while G_cluster_cycle == False:
+            G_cluster_cycle = cc.testOriginaltoCluster(G[1], num_nodes, criticality, False, False)
+        cluster_graphs.append(G_cluster_cycle)
+        cluster_graphs.append(G_cluster_no_cycle)
     print(original_graphs, cluster_graphs)
     return total_edges, original_graphs, cluster_graphs
 
