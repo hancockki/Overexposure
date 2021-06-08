@@ -52,7 +52,7 @@ import make_bipartite_graph as mbg
 import sys
 import openpyxl
 import xlwt
-import cluster_linear_program as lp
+import cluster_linear_program as clp
 import timeit
 from datetime import datetime
 import networkx as nx
@@ -190,9 +190,9 @@ def runTests(num_nodes, k, criticality):
 
         #run linear program
         start = timeit.default_timer()
-        payoff_lp = lp.lp_setup(G, k)
+        payoff_clp = clp.lp_setup(G, k)
         stop = timeit.default_timer()
-        runtime_LP = stop - start
+        runtime_cluster_LP = stop - start
 
         #run bipartite linear program
         bipartite = mbg.graph_to_bipartite(G)
@@ -222,9 +222,9 @@ def runTests(num_nodes, k, criticality):
                 "-", "-", payoff_blp, payoff_greedy, payoff_forward_thinking, "-","-", "-", "-",runtime_bipartite_LP, \
                 runtime_greedy_bipartite, runtime_forward_thinking, num_nodes,k, graph_type, criticality)
         else:
-            write_results(max_val_greedyDP,greedy_payoff, payoff_recursive_dp, payoff_lp, payoff_blp, \
+            write_results(max_val_greedyDP,greedy_payoff, payoff_recursive_dp, payoff_clp, payoff_blp, \
                 payoff_greedy, payoff_forward_thinking, "-", "-", "-", runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
-                runtime_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, num_nodes,k, graph_type, criticality)
+                runtime_cluster_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, num_nodes,k, graph_type, criticality)
         #print cluster graph and bipartite graph
         #cc.showOriginalGraph(original, criticality)
         printGraph(G, graph_type)
@@ -296,10 +296,10 @@ For example, 0 2 1 -22 indicates that there is an edge (0,2) with weight 1, and 
                 pass
 
 """ Write results to an excel sheet stored in the currently_in_use/tests folder """
-def write_results(max_val_greedyDP,greedy_payoff, payoff_recurisve_dp, payoff_lp, payoff_blp, \
+def write_results(max_val_greedyDP,greedy_payoff, payoff_recurisve_dp, payoff_clp, payoff_blp, \
     payoff_bipartite_greedy, payoff_forward_thinking, payoff_blp_cycles, payoff_bipartite_greedy_cycles, payoff_forward_thinking_cycles, \
     runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
-    runtime_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, n, k, graph_type, criticality):
+    runtime_cluster_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, n, k, graph_type, criticality):
     wb = openpyxl.load_workbook('tests/Test_results.xlsx')
     print("WRITING RESULTS")
     sheets = wb.sheetnames
@@ -309,9 +309,9 @@ def write_results(max_val_greedyDP,greedy_payoff, payoff_recurisve_dp, payoff_lp
     date = str(datetime.fromtimestamp(timestamp))
     row = data.max_row+1
     row2 = runtimes.max_row+1
-    data_items_to_add = [n, k, criticality, graph_type, date, max_val_greedyDP, greedy_payoff, payoff_recurisve_dp, payoff_lp, payoff_blp, payoff_bipartite_greedy, payoff_forward_thinking, payoff_blp_cycles, payoff_bipartite_greedy_cycles, payoff_forward_thinking_cycles]
+    data_items_to_add = [n, k, criticality, graph_type, date, max_val_greedyDP, greedy_payoff, payoff_recurisve_dp, payoff_clp, payoff_blp, payoff_bipartite_greedy, payoff_forward_thinking, payoff_blp_cycles, payoff_bipartite_greedy_cycles, payoff_forward_thinking_cycles]
     runtime_data_to_add = [n, k, criticality, graph_type, date, runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
-    runtime_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking]
+    runtime_cluster_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking]
     i = 1
     j = 1
     for item in data_items_to_add:

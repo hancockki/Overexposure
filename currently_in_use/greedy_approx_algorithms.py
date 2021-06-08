@@ -1,5 +1,4 @@
 import networkx as nx
-import DP_algorithms as dp
 
 def computeNegPayoff(G, nodeNum):
     nodeWeight = G.nodes[nodeNum]['weight']
