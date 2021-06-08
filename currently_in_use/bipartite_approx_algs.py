@@ -31,21 +31,21 @@ def greedy_selection(G, k):
                 #print("In degree: ", num_neg)
                 max_weight = payoff - num_neg
                 max_weight_node = node
-        weight_dict[max_weight_node] = -float("inf")
-        #add rej nodes connected to highest payoff cluster to list
-        #print("Max weight node: ", max_weight_node)
-        rej_nodes = [x[0] for x in G.in_edges(max_weight_node)]
-        #print("Rejecting nodes: ", rej_nodes)
-        #iterate through edges, remove any edge that contains rej nodes connected to picked cluster
-        i = 0
-        while i < len(edges):
-            if edges[i][0] in rej_nodes:
-                edges.pop(i)
-            else:
-                i += 1
-        #print("Num edges: ", num_neg, " Max weight node: ", max_weight_node)
-        #G.remove_node(max_weight_node)
         if max_weight_node is not None:
+            weight_dict[max_weight_node] = -float("inf")
+            #add rej nodes connected to highest payoff cluster to list
+            #print("Max weight node: ", max_weight_node)
+            rej_nodes = [x[0] for x in G.in_edges(max_weight_node)]
+            #print("Rejecting nodes: ", rej_nodes)
+            #iterate through edges, remove any edge that contains rej nodes connected to picked cluster
+            i = 0
+            while i < len(edges):
+                if edges[i][0] in rej_nodes:
+                    edges.pop(i)
+                else:
+                    i += 1
+            #print("Num edges: ", num_neg, " Max weight node: ", max_weight_node)
+            #G.remove_node(max_weight_node)
             total_payoff += max_weight
         max_weight = 0
         rej_nodes = set()

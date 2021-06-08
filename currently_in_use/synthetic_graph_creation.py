@@ -2,7 +2,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import time
 import create_clusters as cc
-import driver as d # TEMPORARY
 
 '''
 Not really sure what this will be used for, but the math here makes the graphs comparable

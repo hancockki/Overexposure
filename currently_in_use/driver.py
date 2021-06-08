@@ -60,7 +60,7 @@ import bipartite_approx_algs as baa
 import synthetic_graph_creation as sgc
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
-FILE_DIRECTORY_PREFIX = "currently_in_use/"
+FILE_DIRECTORY_PREFIX = ""#"currently_in_use/"
 
 c = 0.5
 n = 10 #num nodes
@@ -110,8 +110,8 @@ def get_graph(num_nodes, k, criticality):
     graph_types.append("cluster cycle")
     for original in original_graphs:
         cc.showOriginalGraph(original[1], criticality)
-        plt.savefig("saved-graphs/"+original[0] + ".png")
-        plt.show()
+        plt.savefig(FILE_DIRECTORY_PREFIX + "saved-graphs/"+original[0] + ".png")
+        # plt.show()
     return cluster_graphs, graph_types
     
     """
@@ -229,7 +229,7 @@ def runTests(num_nodes, k, criticality):
         #cc.showOriginalGraph(original, criticality)
         printGraph(G, graph_type)
         printBipartite(bipartite, graph_type)
-    plt.show()
+    # plt.show()
 
 """ Print bipartite graph using network x. Saved to file"""
 def printBipartite(bipartite, name):
@@ -272,7 +272,7 @@ def printGraph(G, name):
 results output in the excel sheet are inaccurate / do not make sense """
 def store_info(G,k):
     print('\nNext Test:\n')
-    with open("tests/cluster_graph_details.txt", 'w') as graph_info:
+    with open(FILE_DIRECTORY_PREFIX + "tests/cluster_graph_details.txt", 'w') as graph_info:
         timestamp = datetime.timestamp(datetime.now())
         date = datetime.fromtimestamp(timestamp)
         graph_info.write('c\n')
@@ -344,6 +344,13 @@ def main(num_seeds, k, criticality):
     #graph_type = getUserInput()
     runTests(num_seeds, k, criticality)
 
-if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
-# main(15,3,0.5)
+# if __name__ == "__main__":
+#     main(sys.argv[1], sys.argv[2], sys.argv[3])
+
+crits = [0.4,0.5,0.7]
+nn = 75
+times = 2
+kk = 5
+for crit in crits:
+    for i in range(times):
+        main(nn, kk, crit)
