@@ -27,10 +27,11 @@ def create_test_graphs(criticality, num_nodes, num_links, prob_rewrite_edge, fil
         total_edges += G[1].number_of_edges()
         #cc.showOriginalGraph(G,criticality)
         #plt.show()
-        while G_cluster_no_cycle == False:
-            G_cluster_no_cycle = cc.testOriginaltoCluster(G[1], num_nodes, criticality, True, True)
         while G_cluster_cycle == False:
             G_cluster_cycle = cc.testOriginaltoCluster(G[1], num_nodes, criticality, False, False)
+        while G_cluster_no_cycle == False:
+            G_cluster_no_cycle = cc.removeClusterCycles(G_cluster_cycle)
+        
         cluster_graphs.append(G_cluster_cycle)
         cluster_graphs.append(G_cluster_no_cycle)
     print(original_graphs, cluster_graphs)

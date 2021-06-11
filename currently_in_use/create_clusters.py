@@ -43,7 +43,7 @@ from datetime import datetime
 global rejectingNodeDict
 global clusterDict
 global allSubsets
-global DEBUG
+# global DEBUG
 rejectingNodeDict = {}
 sharedRejectingNodes = {}
 clusterDict = {}

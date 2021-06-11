@@ -344,13 +344,13 @@ def main(num_seeds, k, criticality):
     #graph_type = getUserInput()
     runTests(num_seeds, k, criticality)
 
-# if __name__ == "__main__":
-#     main(sys.argv[1], sys.argv[2], sys.argv[3])
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2], sys.argv[3])
 
-crits = [0.4,0.5,0.7]
-nn = 75
-times = 2
-kk = 5
-for crit in crits:
-    for i in range(times):
-        main(nn, kk, crit)
+# crits = [0.4,0.5,0.7]
+# nn = 75
+# times = 2
+# kk = 5
+# for crit in crits:
+#     for i in range(times):
+#         main(nn, kk, crit)
