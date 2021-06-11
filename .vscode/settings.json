@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "/usr/local/bin/python3",
+    "python.pythonPath": "C:\\Users\\friel\\AppData\\Local\\Programs\\Python\\Python37\\python.exe",
     "git.ignoreLimitWarning": true,
     "python.testing.pytestArgs": [
         "env"

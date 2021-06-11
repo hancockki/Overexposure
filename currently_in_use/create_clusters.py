@@ -1,4 +1,29 @@
+"""
+This script contains all of the code pertaining to creating the graph data
+structure we are running optimization algorithms on. The method
+testOriginaltoCluster is the driver for converting a tree graph structure to 
+a cluster graph. This method creates a randomly generated tree and then calls
+buildClusteredSet to identify the clusters of accepting nodes. A cluster of accepting
+nodes is all of the acceptable nodes reachable from a given accepting node. In this way,
+a cluster is surrounded by a 'wall' of rejecting nodes. Each cluster becomes a node in the 
+cluster graph, and each edge has weight equal to the number of rejecting nodes between two
+clusters.
+
+The method createClusterGraph is another way to quickly test
+as it does not create a cluster graph but generates a tree that 
+we will use as our cluster graph.
+
+In creating our cluster graph, we have two requirements for running recursive DP, knapsack DP,
+and the cluster linear program.
+    1) no cycles present in the graph
+    2) no rejecting node is shared by more than 2 clusters (ie only present in one edge)
+
+If we want to ensure these two properties hold, set the global boolean DEBUG to true. If not, set it to false.
+The script driver.py will keep calling testOriginalToCluster until it can create a graph that satisfies these properties.
+"""
+
 import networkx as nx
+from networkx.algorithms import tree
 from networkx.algorithms import approximation as approx
 from operator import itemgetter
 import random
@@ -13,14 +38,16 @@ import codecs
 #from mat4py import savemat
 import csv
 
+from datetime import datetime
+
 global rejectingNodeDict
 global clusterDict
 global allSubsets
-global DEBUG
+# global DEBUG
 rejectingNodeDict = {}
+sharedRejectingNodes = {}
 clusterDict = {}
 allSubsets = []
-DEBUG = False # change to true if want to print debug statements
 
 # In[32]:
 
@@ -42,6 +69,7 @@ def createClusterGraph(n, maxWeight):
         for neighbor in nx.neighbors(G, i):
             rand2 = random.randint(0,rand)
             G.add_edge(i, neighbor, weight=rand2)
+    print("created cluster graph")
     return G
 
 #clear dictionaries for next graph to test
@@ -79,14 +107,16 @@ def setVisitedFalse(G):
     for nodeID in nodeList:
         G.nodes[nodeID]["visited"] = False
 
+"""
+Perform BFS to label a cluster. Note how we called setVisitedFalse(G) upon finding an unvisited node.
+The idea is that clusters are "contained" - every cluster is separated from every other cluster by walls of
+rejecting nodes. You will never find another cluster, because if you could, it would simply be one cluster.
+However, we need to set rejecting nodes to visited so that we don't count them for each accepting neighbor.
+This, however, is not problematic, because we label all nodes from the cluster from a single canonical source node.
+We will only reach this method from another cluster - whereupon we call setVisitedFalse(), clearing the rejecting
+nodes, allowing us to again "contain" this new cluster.
+"""
 def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
-    # Perform BFS to label a cluster. Note how we called setVisitedFalse(G) upon finding an unvisited node.
-    # The idea is that clusters are "contained" - every cluster is separated from every other cluster by walls of
-    # rejecting nodes. You will never find another cluster, because if you could, it would simply be one cluster.
-    # However, we need to set rejecting nodes to visited so that we don't count them for each accepting neighbor.
-    # This, however, is not problematic, because we label all nodes from the cluster from a single canonical source node.
-    # We will only reach this method from another cluster - whereupon we call setVisitedFalse(), clearing the rejecting
-    # nodes, allowing us to again "contain" this new cluster.
     
     if G.nodes[source]['visited'] == False:
         setVisitedFalse(G)
@@ -162,18 +192,39 @@ def labelClusters(G, source, clusterNumber, appeal, thirdAlgorithm=False):
                                 rejectingNodeDict[clusterNumber].add(node)
                                 visited.append(node)
                     '''
+    if clusterNumber not in rejectingNodeDict:
+        print("didnt see any neg nodes from cluster ", clusterNumber)
+
     return acceptingInThisCluster, rejecting, clusterNumber
 
 
 # In[43]:
 
-def buildClusteredSet(G, threshold, thirdAlgorithm=False):
+def removeClusterCycles(G):
+    print("IN REMOVE CYCLES")
+    try:
+        nx.find_cycle(G)
+        mst = tree.maximum_spanning_edges(G, algorithm="kruskal", data=False)
+        edgelist = list(mst)
+        sorted(sorted(e) for e in edgelist)
+        print("EDGE LIST-------->", edgelist)
+        edges = G.edges()
+        print("ORIGINAL EDGES:", edges)
+        for e in edges:
+            if e not in edgelist:
+                G.remove_edge(e[0],e[1])
+        print("NEW EDGES: ", G.edges())
 
-    # From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled
-    # from the (arbitrary) canonical node in its cluster.
-    # We then select a seed set of up to (not always, depending on the composition of the graph) k source nodes.
-    # We select the k source clusters with the highest accepting degree, implemented by sorting a list of tuples.
-    
+    except nx.exception.NetworkXNoCycle:
+        pass
+    return G
+
+"""
+From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled
+from the (arbitrary) canonical node in its cluster.
+We then select a seed set of up to (not always, depending on the composition of the graph) k source nodes.
+"""
+def buildClusteredSet(G, threshold, removeCycles, DEBUG=True, thirdAlgorithm=False):
     nodeList = G.nodes()
     seedSet = []
     clusterCount = 0
@@ -181,52 +232,54 @@ def buildClusteredSet(G, threshold, thirdAlgorithm=False):
     #Build the clusters
     for nodeID in nodeList:
         if (G.nodes[nodeID]['criticality'] < threshold) and (G.nodes[nodeID]['cluster'] == -1):
+            #print(clusterCount, "---------------------->>>>>>>>>>")
             summedNeighbors = labelClusters(G, nodeID, clusterCount, threshold, thirdAlgorithm)
             #if summedNeighbors[0] > 0:
             seedSet.append((summedNeighbors[2], summedNeighbors[0], summedNeighbors[1]))
             #print("num rejecting=", summedNeighbors[1])
             makeClusterNode(G_cluster, clusterCount, summedNeighbors[0])
+            #print("rejecting node dictionary:", rejectingNodeDict)
             clusterCount += 1
     #Choose up-to-k
+    if len(G_cluster.nodes()) < 2:
+        print("NOT GONNA WORK")
+        return False
     
     #MTI: Decrement the cluster weight by the number of rejecting nodes that are exclusive to a cluster
+    # print("rejecting node dictionary:", rejectingNodeDict)
     for clusterNum, rejNodes in rejectingNodeDict.items():
-        if DEBUG: print("rejecting nodes,", clusterNum, rejNodes)
+        #if DEBUG: print("rejecting nodes,", clusterNum, rejNodes)
         rejNodes_copy = rejNodes.copy()
         for clusterNum2, rejNodes2 in rejectingNodeDict.items():
+            #if DEBUG: print("rejecting nodes 2,", clusterNum2, rejNodes2)
             if clusterNum != clusterNum2:
                 rejNodes_copy = rejNodes_copy - rejNodes2
-        if DEBUG: print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
+        #if DEBUG: print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
+        #print("NODES: ", G_cluster.nodes())
         G_cluster.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
+    # return false if assumtion 1 does not hold
+    if DEBUG:
+        sharedRejectingNodes = {}
+        for clusterNum, rejNodes in rejectingNodeDict.items():
+            for rejNode in rejNodes:
+                if rejNode in sharedRejectingNodes:
+                    sharedRejectingNodes[rejNode] += 1
+                    if sharedRejectingNodes[rejNode] > 2:
+                        #print(sharedRejectingNodes[rejNode], rejNode, sharedRejectingNodes)
+                        #print("RETURNING FALSE")
+                        return False
+                else:
+                    sharedRejectingNodes[rejNode] = 1
+        print("\nMap rejecting nodes to clusters:\n", sharedRejectingNodes)
 
-    make_cluster_edge(G_cluster, G, rejectingNodeDict)    
+    make_cluster_edge(G_cluster, G, rejectingNodeDict, removeCycles, DEBUG)   
+    if removeCycles:
+        G_cluster = removeClusterCycles(G_cluster) 
     return G_cluster
 
-
-def makeMatrix(G, n):
-    f = open("make_matrix.txt", "a")
-    f.write("\n Next test: \n")
-    matrix = [[0] * n for _ in range(n)] #store payoff
-    weight = nx.get_node_attributes(G, name='weight')
-    #print("weight of nodes is:", weight)
-    edge = nx.get_edge_attributes(G, 'weight')
-    #print("weight of edges is:", edge)
-    for key, value in edge.items():
-        matrix[key[0]][key[1]] = value
-        matrix[key[1]][key[0]] = value
-    for key, value in weight.items():
-        matrix[key][key] = value
-    for i in range(n):
-        fullStr = ','.join([str(elem) for elem in matrix[i] ])
-        f.write("[" + fullStr + "]" + "\n")
-    f.close()
-    with open('make_matrix.csv', mode='w', newline='') as make_matrix:
-        matrix_writer = csv.writer(make_matrix, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        for i in range(n):
-            matrix_writer.writerow(matrix[i])
-
-
-
+"""
+Subtract the number of rejecting nodes connected to a given cluster from its weight.
+"""
 def computeNegPayoff(G, nodeNum):
     nodeWeight = G.nodes[nodeNum]['weight']
     negPayoff = nx.neighbors(G, nodeNum)
@@ -237,6 +290,11 @@ def computeNegPayoff(G, nodeNum):
     #print("node weight is:", nodeWeight)
     return nodeWeight
 
+"""
+Perform bfs from a given source accepting node to identify all the accepting nodes
+reachable from the source node. Set visited to true once we have identified a node
+as rejecting or accepting.
+"""
 def bfs(G, node, source):
     # From a source node, perform BFS based on criticality.
     queue = []
@@ -251,18 +309,17 @@ def bfs(G, node, source):
             if neighbor in allSubsets:
                 continue
             if neighbor in subgraph:
-                print("already picked", neighbor)
                 continue
             elif neighbor != source and neighbor != node:
                 queue.append(neighbor)
                 allSubsets.append(neighbor)
                 subgraph.append(neighbor)
                 #print("adding:", neighbor)
-    print("subgraph is", subgraph)
     return subgraph
 
 #we defined a new cluster and are adding a node to the cluster graph, whose weight is the number of accepting nodes in that cluster
 def makeClusterNode(G, clusterNum, weight):
+    #print("---------MAKING NODE-----------", clusterNum)
     G.add_node(clusterNum)
     G.nodes[clusterNum]['weight'] = weight
 
@@ -274,16 +331,19 @@ that share rejecting nodes
     G_cluster -> cluster graph whose edge is being labelled
     rejectingNodesDict -> rejecting node dictionary
 """
-def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False):
-    if DEBUG: print(rejectingNodeDict)
-    # 
+def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles, DEBUG):
+    if DEBUG: print("rej nodes dictioary", rejectingNodeDict)
     for clusterNum, rejNodes in rejectingNodesDict.items():
         for clusterNum2, rejNodes2 in rejectingNodesDict.items():
             if clusterNum >= clusterNum2:
                 continue
             else:
                 #intersection = [value for value in rejNodes if value in rejNodes2] #compute intersection
-                intersection = rejNodes.intersection(rejNodes2)
+                shared_rej_nodes = rejNodes.intersection(rejNodes2)
+                intersection = []
+                for i in shared_rej_nodes:
+                    rej_node = -i
+                    intersection.append(rej_node)
                 #print("intersection is", intersection)
 
                 #####   MTI: COMMENTING OUT FOR NOW. SEE COMMENT IN labelClusters(.) FUNCTION.
@@ -296,40 +356,37 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False)
                             intersection.add(node1)
                             intersection.add(node2)
                 '''
-
                 weight = len(intersection)
-                if weight > 0:  
-                    G_cluster.add_edge(clusterNum, clusterNum2, weight=weight, data=intersection)
-                    #print("intersection between nodes ", clusterNum, clusterNum2, "is:", intersection, "of weight", weight)
+                if len(shared_rej_nodes) > 0:
+                    G_cluster.add_edge(clusterNum, clusterNum2, weight=weight, rej_nodes=intersection)
+                    '''
                 if removeCycles:
                     try:
                         while len(nx.find_cycle(G_cluster)) > 0:
-                            print("staring while")
                             cycle = nx.find_cycle(G_cluster)
-                            print("cycle was found in graph, oh no", cycle)
-                            rej_nodes = []
+                            #print("cycle was found in graph, oh no", cycle)
+                            rej_nodes_repeat = []
                             for edge in cycle:
                                 removed = False
-                                data = G_cluster.get_edge_data(edge[0], edge[1])['data']
-                                print("data is: ", data)
-                                #print("rejecting node is", data)
-                                if len(data) == 1:
-                                    for node in data:
-                                        if node in rej_nodes:
-                                            print(rej_nodes)
-                                            G_cluster.remove_edge(edge[0], edge[1])
-                                            print("already saw" , node ," so removed edge: ", edge[0], edge[1])
-                                            removed = True
-                                        else:
-                                            rej_nodes.append(node)
+                                #look through all the rejecting nodes in each edge
+                                rej_nodes = G_cluster.get_edge_data(edge[0], edge[1])['rej_nodes']
+                                for rej_node in rej_nodes:
+                                    #check if we have seen this rejecting node in another edge
+                                    #TODO: this might delete a rejecting node in an edge that we do not actually want to delete
+                                    if rej_node in rej_nodes_repeat:
+                                        G_cluster.remove_edge(edge[0], edge[1])
+                                        print("already saw" , rej_node ," so removed edge: ", edge[0], edge[1])
+                                        removed = True
+                                    else:
+                                        rej_nodes_repeat.append(rej_node)
                                 if removed:
                                     break
-
                     except nx.exception.NetworkXNoCycle:
-                        print("no cycle between nodes", clusterNum, clusterNum2,)
+                        #print("no cycle between nodes", clusterNum, clusterNum2,)
                         pass
+                '''
     components = nx.algorithms.components.connected_components(G_cluster)
-    if DEBUG: print("Connected components: ")
+    if DEBUG: print("Connected components: ", components)
     prev = -1
     for comp in components:
         if DEBUG: print("Component: ", comp)
@@ -343,19 +400,24 @@ def make_cluster_edge(G_cluster, G_orig, rejectingNodesDict, removeCycles=False)
 #method to test whether our input graph is correctly forming clusters, then runs dynamic programming
 #input -- n, number of nodes in random graph
 #           c, criticality
-#           k, number of clusters to seed
-def testOriginaltoCluster(n, c, k):
-    G_test = nx.random_tree(n)
-    setAllNodeAttributes(G_test)
-    showOriginalGraph(G_test, c)
-    G_cluster = buildClusteredSet(G_test, c)
-
+def testOriginaltoCluster(G, n, c, removeCycles, DEBUG):
+    setAllNodeAttributes(G)
+    #showOriginalGraph(G, c)
+    saveOriginalGraph(G, c, "tests/original_graph.txt")
+    G_cluster = buildClusteredSet(G, c, removeCycles, DEBUG)
+    if G_cluster == False:
+        print("DIDNT WORK-----------------")
+        clearVisitedNodesAndDictionaries(G)
+        return False
+    '''
     f = open("make_matrix.txt", "a")
     f.write("cluster dictionary:" + str(clusterDict) + "\n")
     f.write("rej node dictionary: " + str(rejectingNodeDict) + "\n")
     f.write("edge data:" + str(G_cluster.edges.data()) + "\n")
     f.write("node data:" + str(G_cluster.nodes.data()) + "\n")
     f.close()
+    '''
+    clearVisitedNodesAndDictionaries(G)
     return G_cluster
 
 def showOriginalGraph(G, c):
@@ -367,3 +429,63 @@ def showOriginalGraph(G, c):
             color_map.append('green')
     plt.figure('original network')
     nx.draw_networkx(G, node_color = color_map, pos=nx.spring_layout(G, iterations=1000), arrows=False, with_labels=True)
+
+'''
+Saves the original graph and associated criticality in a file called original_graph.txt
+This file can be used in conjuntion with create_from_file function in create_graph_from_file
+The format used here is described in create_graph_from_file class
+
+@params:
+    G -> original graph
+    c -> criticality (used for show purposes and creating cluster)
+'''
+def saveOriginalGraph(G, c, filename):
+    with open(filename, 'w') as graph_info:
+        timestamp = datetime.timestamp(datetime.now())
+        date = datetime.fromtimestamp(timestamp)
+        graph_info.write("o\n")
+        graph_info.write("crit " + str(c) + "\n")
+        graph_info.write("# Timestamp: " + str(date) + "\n")
+        graph_info.write("# Nodes: " + str(G.number_of_nodes()) + "\n")
+        data = G.edges.data()
+        graph_info.write("# Edges: " + str(len(data)))
+        weights = G.nodes.data('criticality')
+        for node in weights:
+            #print(node)
+            graph_info.write("\n" + str(node[1]))
+        for item in data:
+            graph_info.write("\n" + str(item[0]) + " " + str(item[1]))
+
+"""
+DEPRECATED-- was used to create the matrix of nodes and edges to become input to linear programming.
+However, we are now doing linear programming using python.
+
+"""
+def makeMatrix(G, n):
+    f = open("make_matrix.txt", "w")
+    matrix = [[0] * n for _ in range(n)] #store payoff
+    node_weights = nx.get_node_attributes(G, name='weight')
+    #print("weight of nodes is:", weight)
+    edge_weights = nx.get_edge_attributes(G, 'weight')
+    #print("weight of edges is:", edge_weights)
+    nodes = []
+    edges = [[] for _ in range(n)]
+    for key, value in edge_weights.items():
+        if value == 0:
+            continue
+        matrix[key[0]][key[1]] = value
+        matrix[key[1]][key[0]] = value
+        edges[key[0]].append(value)
+        edges[key[1]].append(value)
+    for key, value in node_weights.items():
+        matrix[key][key] = value
+        nodes.append(value)
+    for i in range(n):
+        fullStr = ','.join([str(elem) for elem in matrix[i] ])
+        f.write(fullStr + "\n")
+    f.close()
+    with open('make_matrix.csv', mode='w', newline='') as make_matrix:
+        matrix_writer = csv.writer(make_matrix, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for i in range(n):
+            matrix_writer.writerow(matrix[i])
+    return nodes, edges

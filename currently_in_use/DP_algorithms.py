@@ -1,77 +1,8 @@
 import networkx as nx
 import itertools
 import create_clusters as cc
-
-def computeNegPayoff(G, nodeNum):
-    nodeWeight = G.nodes[nodeNum]['weight']
-    negPayoff = nx.neighbors(G, nodeNum)
-    for negNode in negPayoff:
-        add = G.get_edge_data(nodeNum, negNode)
-        add = add['weight']
-        nodeWeight -= add
-    #print("node weight is:", nodeWeight)
-    return nodeWeight
-
-
-def greedyDP(G, i, k): #doesn't consider subtrees
-    #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
-    #i = number_of_nodes(G)
-    #k = number of seeds
-    storePayoff = [[0] * i for _ in range(k)] #store payoff
-    storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
-    tree = nx.bfs_tree(G, 1)
-    for numSeeds in range(0,k): #bottom up DP
-        nodes = list(reversed(list((nx.topological_sort(tree))))) #look at nodes in reverse topological order
-        for j in range(0,i): 
-            if j == 0 and numSeeds == 0: #first entry
-                #breakpoint()
-                storeSeeds[numSeeds][j] = [nodes[j]]
-                nodeWeight = computeNegPayoff(G, nodes[j])
-                storePayoff[numSeeds][j] = nodeWeight
-                #print("first entry,", storePayoff)
-
-            elif numSeeds == 0: #if there is only one seed to consider, aka first row
-                last = storePayoff[numSeeds][j-1]
-                nodeWeight = computeNegPayoff(G, nodes[j])
-                if nodeWeight > last:
-                    storePayoff[numSeeds][j]=nodeWeight
-                    storeSeeds[numSeeds][j] = [nodes[j]]
-                else:
-                    storePayoff[numSeeds][j]= last
-                    table = storeSeeds[numSeeds][j-1]
-                    table2 = table[:]
-                    storeSeeds[numSeeds][j] = table2
-                #print("num seeds 0",storePayoff)
-            elif j == 0: #we only consider first node, so its simple
-                storePayoff[numSeeds][j] = storePayoff[numSeeds - 1][j]
-                storeSeeds[numSeeds][j] = storeSeeds[numSeeds - 1][j][:]
-            else: #where DP comes in
-                last = storePayoff[numSeeds-1][j-1] #diagonal-up entry
-                nextGuess = computeNegPayoff(G, nodes[j]) + last
-                for lastNodes in storeSeeds[numSeeds-1][j-1]: #dont want to double count edges!
-                    neighbors = nx.neighbors(G, lastNodes)
-                    for neighbor in neighbors:
-                        if neighbor == nodes[j]:
-                            add = G.get_edge_data(lastNodes, nodes[j]) #neighbor of new node is current node
-                            add = add['weight']
-                            nextGuess += add
-                lastEntry = storePayoff[numSeeds][j-1] #left entry
-                lastEntryUp = storePayoff[numSeeds-1][j]
-                tup = [(storeSeeds[numSeeds][j-1], lastEntry), (storeSeeds[numSeeds-1][j], lastEntryUp), (storeSeeds[numSeeds-1][j-1], nextGuess), (storeSeeds[numSeeds-1][j-1], last)]
-                tup.sort(key = lambda x: x[1])
-                nextList = tup[-1][0][:]
-                storeSeeds[numSeeds][j] = nextList
-                storePayoff[numSeeds][j] = tup[-1][1]
-                if tup[-1][0] == storeSeeds[numSeeds-1][j-1]:
-                    storeSeeds[numSeeds][j].append(nodes[j])
-    f = open("make_matrix.txt", "a")
-    f.write("\n  regular DP payoff: " + str(storePayoff))
-    f.write("\n with seeds: " + str(storeSeeds))
-    maxVal = storePayoff[k-1][i-1]
-    for j in range(0,k):
-        if storePayoff[j][i-1] > maxVal:
-            maxVal = storePayoff[j][i-1]
-    return (maxVal, storeSeeds[j][i-1])
+import brute_force as bf
+import greedy_approx_algorithms as greedy
 
 """
 Driver function for running dynamic programming
@@ -137,7 +68,8 @@ def recursiveDP(G, tree, k, source, storePayoff, witness):
 
         #print(neighbors_list, "NEIGHBORS LIST")
         num_children = len(neighbors_list)
-        partitions_list = list(partitions(k, num_children)) #seed all k seeds among the child nodes
+        #partitions_list = list(partitions(k, num_children)) #seed all k seeds among the child nodes
+        partitions_list = [[int(k/num_children) for i in range(num_children)]]
         maxSum = float("-inf")
         opt_allocation = None
         opt_take_child = None
@@ -275,7 +207,7 @@ def tree_decomp_DP(G, tree, k, source, storePayoffCluster, storePayoffTree, reje
                     neighbors = list(G.neighbors(node)) # get the edge weights, don't want to double count
                     for neighbor in neighbors: # we loop through all the neighbors and look to see if we have already accounted for this rej node
                         print(G.get_edge_data(node, neighbor))
-                        for rejecting_nodes in G.get_edge_data(node, neighbor)['data']:
+                        for rejecting_nodes in G.get_edge_data(node, neighbor)['rej_nodes']:
                             if rejecting_nodes in rejecting:
                                 continue
                             else:

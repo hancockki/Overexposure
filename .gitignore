@@ -2,3 +2,12 @@ data-code/congress-master
 DS_Store
 .DS_Store
 .ipynb_checkpoints/
+# additional files to ignore for moment (Laura 3/12/21)
+.pytest_cache/
+__pycache__/
+currently_in_use/__pycache__/
+make_matrix.txt
+currently_in_use/make_matrix.txt
+make_matrix_info.txt
+this.png
+currently_in_use/this.png
