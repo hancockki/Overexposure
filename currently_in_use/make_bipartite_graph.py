@@ -25,13 +25,14 @@ def graph_to_bipartite(G):
         #it is attached to.
         try:
             for rej_node in edge[2]['rej_nodes']: #look at all rejecting nodes
-                if not bipartite_graph.has_node(rej_node):
-                    bipartite_graph.add_node(rej_node)
-                    bipartite_graph.nodes[rej_node]['weight'] = rej_node
-                if not bipartite_graph.has_edge(rej_node, edge[0]):
-                    bipartite_graph.add_edge(rej_node, edge[0])
-                if not bipartite_graph.has_edge(rej_node, edge[1]):
-                    bipartite_graph.add_edge(rej_node, edge[1])            
+                rej_label = "r" + str(rej_node) # create a different lable from the cluster nodes so that they can never be confused for eachother
+                if not bipartite_graph.has_node(rej_label):
+                    bipartite_graph.add_node(rej_label)
+                    bipartite_graph.nodes[rej_label]['weight'] = rej_node
+                if not bipartite_graph.has_edge(rej_label, edge[0]):
+                    bipartite_graph.add_edge(rej_label, edge[0])
+                if not bipartite_graph.has_edge(rej_label, edge[1]):
+                    bipartite_graph.add_edge(rej_label, edge[1])            
         except KeyError:
             continue
     return bipartite_graph

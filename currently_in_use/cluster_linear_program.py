@@ -1,5 +1,4 @@
 from pulp import *
-import create_clusters as cc
 import networkx as nx
 
 def lp_setup(G, k):
