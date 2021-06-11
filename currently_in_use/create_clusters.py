@@ -257,6 +257,7 @@ def buildClusteredSet(G, threshold, removeCycles, DEBUG=True, thirdAlgorithm=Fal
         #if DEBUG: print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
         #print("NODES: ", G_cluster.nodes())
         G_cluster.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
+    # return false if assumtion 1 does not hold
     if DEBUG:
         sharedRejectingNodes = {}
         for clusterNum, rejNodes in rejectingNodeDict.items():
