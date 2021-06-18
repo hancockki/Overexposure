@@ -98,9 +98,9 @@ def greedyDP(G, i, k): #doesn't consider subtrees
                 storePayoff[numSeeds][j] = tup[-1][1]
                 if tup[-1][0] == storeSeeds[numSeeds-1][j-1]:
                     storeSeeds[numSeeds][j].append(nodes[j])
-    f = open("make_matrix.txt", "a")
-    f.write("\n  regular DP payoff: " + str(storePayoff))
-    f.write("\n with seeds: " + str(storeSeeds))
+    # f = open("make_matrix.txt", "a")
+    # f.write("\n  regular DP payoff: " + str(storePayoff))
+    # f.write("\n with seeds: " + str(storeSeeds))
     maxVal = storePayoff[k-1][i-1]
     for j in range(0,k):
         if storePayoff[j][i-1] > maxVal:

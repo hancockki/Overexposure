@@ -1,6 +1,6 @@
 import networkx as nx
 import itertools
-import create_clusters as cc
+# import create_clusters as cc
 import brute_force as bf
 import greedy_approx_algorithms as greedy
 
@@ -22,7 +22,8 @@ def runRecursiveDP(G, k):
     root = nodes_tup[0][0]
     tree = nx.bfs_tree(G, root)
     recursiveDP(G, tree, k, root, storePayoff, witness)
-    cc.clearVisitedNodesAndDictionaries(G)
+    # wq: commented this out because I don't think it's necessary. Revisit to be sure!
+    # cc.clearVisitedNodesAndDictionaries(G)
     return storePayoff[0][root][k], storePayoff[1][root][k]
 
 """

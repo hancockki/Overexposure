@@ -1,4 +1,6 @@
+# wq:NAME IN PROGRASS!!!!!!!!!!!!
 """
+wq:have not updated yet
 Driver for entire program.
 How to run the program:
 The program takes four commad line arguments. 
@@ -18,7 +20,7 @@ The main method which reads in these arguments passes them onto runTests(),
 which acts as a driver for the following algorithms:
 
 1) greedy dynamic programming
-2) greedy knapsack
+2) greedy payoff_knapsack
 3) recursive DP (optimal for trees where <=2 clusters share any rej node)
 4) Brute force (commented out by default because it takes so long. User
 can choose to uncomment it and run)
@@ -40,7 +42,8 @@ TODO: find a more efficient way to satisfy these properties. For
 original graphs with >100 nodes, it takes a long time to create
 a cluster graph which satisfies the properties.
 """
-import create_clusters as cc
+import graph_creation
+import view
 import DP_algorithms as dp
 import greedy_approx_algorithms as greedy
 import brute_force as bf
@@ -48,24 +51,18 @@ import bipartite_linear_program as blp
 import create_graph_from_file as cff
 import networkx as nx
 import matplotlib.pyplot as plt
-import make_bipartite_graph as mbg
 import sys
 import openpyxl
-import xlwt
+import random
 import cluster_linear_program as clp
 import timeit
 from datetime import datetime
 import networkx as nx
 import bipartite_approx_algs as baa
-import synthetic_graph_creation as sgc
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
 FILE_DIRECTORY_PREFIX = ""#"currently_in_use/"
-
-c = 0.5
-n = 10 #num nodes
-m = 2 #num links
-p = 0.2 #prob rewrite edge
+ORIGINAL_FILE_LOCATION = "test_files/original/"
 
 #TODO: run more rigorous tests
 #TODO: fix logging output to take max of root and no root
@@ -73,6 +70,7 @@ p = 0.2 #prob rewrite edge
 #TODO: tree decomposition algorithm
 
 """
+wq:have not updated yet
 Experiment Design:
     - previous experiments in previous papers
     - what kinds of networks they are building, how many nodes they are taking into account
@@ -91,266 +89,195 @@ Come up with an experiment design based on papers that we've read, then see how 
     We want to save the graph and run tests based on that
 """
 
-def get_graph(num_nodes, k, criticality):
-    G_cluster = False
-    G = False
-    cluster_graphs, original_graphs = sgc.make_graphs(criticality, num_nodes)
-    graph_types = ["ba-no-cycle","ba-cycle", "er-no-cycle","er-cycle", "ws-no-cycle","ws-cycle"]
-    while G_cluster == False:
-        G = nx.random_tree(num_nodes)
-        G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, True, True)
-    cluster_graphs.append(G_cluster)
-    store_info(G_cluster, k)
-    graph_types.append("cluster no cycle")
-    G_cluster_cycle = False
-    while G_cluster_cycle == False:
-        G_cluster_cycle = cc.testOriginaltoCluster(G, num_nodes, criticality, False, False)
-    cluster_graphs.append(G_cluster_cycle)
-    original_graphs.append(["tree", G])
-    graph_types.append("cluster cycle")
-    for original in original_graphs:
-        cc.showOriginalGraph(original[1], criticality)
-        plt.savefig(FILE_DIRECTORY_PREFIX + "saved-graphs/"+original[0] + ".png")
-        # plt.show()
-    return cluster_graphs, graph_types
-    
-    """
-    if graph_type == "1":
-        print("making graph")
-        while G_cluster == False:
-            G = nx.random_tree(num_nodes)
-            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, True)
-            return [G_cluster], [G]
-    elif graph_type == "2":
-        while G_cluster == False:
-            G = nx.random_tree(num_nodes)
-            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, False)
-            return [G_cluster], [G]
-    elif graph_type == "3" or graph_type == "4" or graph_type == "5":
-        return cluster_graphs, original_graphs
-    
-    elif graph_type == "4":
-        while G_cluster == False:
-            G = nx.barabasi_albert_graph(num_nodes, 3)
-            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, True)
-    elif graph_type == "5":
-        while G_cluster == False:
-            G = nx.watts_strogatz_graph(num_nodes, 3, 0.5)
-            G_cluster = cc.testOriginaltoCluster(G, num_nodes, criticality, True)
-    else:
-        print("Try again, no graph type specified or spelled wrong")
-        exit(0)
-    """
+'''
+Not really sure what this will be used for, but the math here makes the graphs comparable
+'''
 
-"""
-Driver for all of our algorithms.
-@params:
-    num_nodes --> number of nodes in the original graph
-    k --> number of seeds chosen. Corresponds to number of clusters
-    picked in the cluster graph
-    criticality --> criticality threshold for nodes in the original graph.
-    Nodes above this value will be accepting
-"""
-def runTests(num_nodes, k, criticality):
-    #create cluster graph
-    G_clusters, graph_types = get_graph(num_nodes, k, criticality) #initialize to false, when we get a graph that satisfies the requirements
-    for graph in G_clusters:
-        print("NODES: ", graph.nodes())
-    #this will be true
-    #TODO: commented out. Used when we want to create a cluster graph without an original graph
-    #max_weight = 5
-    #TODO: commented out. Comment out the above 3 lines and uncomment this to create a tree cluster
-    #graph without starting with the original. Useful for testing.
-    #G = cc.createClusterGraph(num_nodes, max_weight)
-    for G, graph_type in zip(G_clusters, graph_types):
-        #compute payoff for greedy DP
-        print("NEXT TEST:------------->", graph_type)
-        start = timeit.default_timer()
-        max_val_greedyDP, seedset = greedy.greedyDP(G, G.number_of_nodes(), k)
-        stop = timeit.default_timer()
-        runtime_greedy_DP = stop - start
-
-        store_info(G,k)
-        print("\nGreedy DP Payoff: ", max_val_greedyDP)
-            
-        #compute payoff for most basic greedy algorithm
-        start = timeit.default_timer()
-        greedy_payoff, greedy_seedset = greedy.kHighestClusters(G, k)
-        stop = timeit.default_timer()
-        runtime_greedy = stop - start
-        print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", greedy_payoff)
-
-        #compute payoff for recursive DP
-        start = timeit.default_timer()
-        payoff_root, payoff_no_root = dp.runRecursiveDP(G, k)
-        payoff_recursive_dp = max(payoff_root, payoff_no_root)
-        stop = timeit.default_timer()
-        runtime_recursive_DP = stop - start
-        print("Recursive DP payoff: ", payoff_recursive_dp)
-
-        #run linear program
-        start = timeit.default_timer()
-        payoff_clp = clp.lp_setup(G, k)
-        stop = timeit.default_timer()
-        runtime_cluster_LP = stop - start
-
-        #run bipartite linear program
-        bipartite = mbg.graph_to_bipartite(G)
-        start = timeit.default_timer()
-        payoff_blp = blp.solve_lp(bipartite, k)
-        stop = timeit.default_timer()
-        runtime_bipartite_LP = stop - start
-
-        start = timeit.default_timer()
-        payoff_greedy = baa.greedy_selection(bipartite, k)
-        stop = timeit.default_timer()
-
-        #compute payoff using brute force algorithm --> uncomment out if you want to run
-        #best_payoff_selection,best_payoff = bf.computePayoff(bipartite, k)
-        #print("Brute Force payoff: ", best_payoff_selection, best_payoff)
-
-        runtime_greedy_bipartite = stop - start
-
-        start = timeit.default_timer()
-        payoff_forward_thinking = baa.forward_thinking_greedy(bipartite, k)
-        stop = timeit.default_timer()
-        runtime_forward_thinking = stop - start
-
-        #write the results to excel file
-        if graph_type == "ba-cycle" or graph_type == "ws-cycle" or graph_type == "er-cycle" or graph_type == "cluster cycle":
-            write_results("-","-", "-", "-", "-", \
-                "-", "-", payoff_blp, payoff_greedy, payoff_forward_thinking, "-","-", "-", "-",runtime_bipartite_LP, \
-                runtime_greedy_bipartite, runtime_forward_thinking, num_nodes,k, graph_type, criticality)
-        else:
-            write_results(max_val_greedyDP,greedy_payoff, payoff_recursive_dp, payoff_clp, payoff_blp, \
-                payoff_greedy, payoff_forward_thinking, "-", "-", "-", runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
-                runtime_cluster_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, num_nodes,k, graph_type, criticality)
-        #print cluster graph and bipartite graph
-        #cc.showOriginalGraph(original, criticality)
-        printGraph(G, graph_type)
-        printBipartite(bipartite, graph_type)
-    # plt.show()
-
-""" Print bipartite graph using network x. Saved to file"""
-def printBipartite(bipartite, name):
-    print("printing bipartite graph")
-    plt.figure(name+ "-bipartite")
-    pos = nx.spring_layout(bipartite)
-    nx.draw(bipartite, pos)
-
-    node_labels = nx.get_node_attributes(bipartite,'weight')
-    print(node_labels)
-    # do (id, weight) pair for lable instead of just weight
-    for key,val in node_labels.items():
-        node_labels[key] = (key,val)
-    nx.draw_networkx_labels(bipartite, pos=pos, labels=node_labels)
-    plt.savefig("saved-graphs/"+ name + "-bipartite.png")
-
-""" display cluster graph """
-def printGraph(G, name):
-    plt.figure(name)
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos)
-
-    node_labels = nx.get_node_attributes(G,'weight')
-    # do (id, weight) pair for lable instead of just weight
-    for key,val in node_labels.items():
-        node_labels[key] = (key,val)
-    nx.draw_networkx_labels(G, pos=pos, labels=node_labels)
-    data_info = nx.get_edge_attributes(G,'rej_nodes') # edge lables rejecting node
-    weight_info = nx.get_edge_attributes(G,'weight') # edge lables rejecting node
-    edge_labels = {}
-    for key in weight_info.keys():
-        if key in data_info.keys():
-            edge_labels[key] = (data_info[key],weight_info[key])
-        else:
-            edge_labels[key] = ("na",weight_info[key])
-    nx.draw_networkx_edge_labels(G, pos=pos, edge_labels=edge_labels)
-    plt.savefig("saved-graphs/" + name + ".png")
-
-""" Store more specific info about each graph, to be used for testing if the 
-results output in the excel sheet are inaccurate / do not make sense """
-def store_info(G,k):
-    print('\nNext Test:\n')
-    with open(FILE_DIRECTORY_PREFIX + "tests/cluster_graph_details.txt", 'w') as graph_info:
-        timestamp = datetime.timestamp(datetime.now())
-        date = datetime.fromtimestamp(timestamp)
-        graph_info.write('c\n')
-        graph_info.write("# Prints each node weight on a new line followed by each edge. \n# \
-Ie the first number printed is the weight of node 0. Then prints each edge followed by its weight and the rejecting nodes.\n# \
-For example, 0 2 1 -22 indicates that there is an edge (0,2) with weight 1, and the rejecting node in that edge is node 22. \n")
-        graph_info.write("# Timestamp: " + str(date) + "\n")
-        graph_info.write("# Nodes: " + str(G.number_of_nodes()) + "\n")
-        data = G.edges.data()
-        graph_info.write("# Edges: " + str(len(data)))
-        weights = G.nodes.data('weight')
-        for node in weights:
-            graph_info.write("\n" + str(node[1]))
-        for item in data:
-            graph_info.write("\n" + str(item[0]) + " " + str(item[1]) + " " + str(item[2]['weight']))
-            try:
-                data = item[2]['rej_nodes']
-                for reject in data:
-                    graph_info.write(" " + str(reject))
-            except:
-                pass
-
-""" Write results to an excel sheet stored in the currently_in_use/tests folder """
-def write_results(max_val_greedyDP,greedy_payoff, payoff_recurisve_dp, payoff_clp, payoff_blp, \
-    payoff_bipartite_greedy, payoff_forward_thinking, payoff_blp_cycles, payoff_bipartite_greedy_cycles, payoff_forward_thinking_cycles, \
-    runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
-    runtime_cluster_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, n, k, graph_type, criticality):
-    wb = openpyxl.load_workbook('tests/Test_results.xlsx')
-    print("WRITING RESULTS")
-    sheets = wb.sheetnames
-    data = wb[sheets[0]]
-    runtimes = wb[sheets[1]]
-    timestamp = datetime.timestamp(datetime.now())
-    date = str(datetime.fromtimestamp(timestamp))
-    row = data.max_row+1
-    row2 = runtimes.max_row+1
-    data_items_to_add = [n, k, criticality, graph_type, date, max_val_greedyDP, greedy_payoff, payoff_recurisve_dp, payoff_clp, payoff_blp, payoff_bipartite_greedy, payoff_forward_thinking, payoff_blp_cycles, payoff_bipartite_greedy_cycles, payoff_forward_thinking_cycles]
-    runtime_data_to_add = [n, k, criticality, graph_type, date, runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
-    runtime_cluster_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking]
-    i = 1
-    j = 1
-    for item in data_items_to_add:
-        c1 = data.cell(row = row, column = i)
-        c1.value = item
-        i += 1
-    for item in runtime_data_to_add:
-        c1 = runtimes.cell(row = row2, column = j)
-        c1.value = item
-        j += 1
-    
-    wb.save('tests/Test_results.xlsx')
-
-def getUserInput():
-    """
-    graph_type = input("What type of graph would you like to run tests on? Options are:\n 1. Cluster graph \
-with no cycles such that no rejecting node shared by more than 2 clusters. Type 1 \n 2. Cluster graph \
-such that no rejecting node shared by more than 2 clusters (cycles may be present). Type 2.\n 3.\
-Erdos-Renyi . Type 3 \n 4. Barabasi-Alber. Type 4 \n 5. Watts-Strogatz. Type 5\n")
-    """
-    graph_type = "all"
-    return graph_type
 
 #main function, used for calling things
-def main(num_seeds, k, criticality):
-    num_seeds = int(num_seeds)
+def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1):
+    num_nodes = int(num_nodes)
     k = int(k)
     criticality = float(criticality)
-    print("getting user input")
-    #graph_type = getUserInput()
-    runTests(num_seeds, k, criticality)
+    do_remove_cycles = string_to_boolean(do_remove_cycles)
+    do_assumption_1 = string_to_boolean(do_assumption_1)
+    m = 2
+    p = 0.2
+    print("generating original graphs")
+    # create three types of graphs (ba, er, ws) or roughly the same size
+    original_graphs, original_types = generate_original_graphs(num_nodes, m, p)
+    
+    # for each graph, create cluster and bipartite graphs then save results, graphs, and plot them
+    for O, graph_type in zip(original_graphs, original_types):
+        C, B = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
+        payoffs, runtimes = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1)
+        
+        ID = view.generate_ID()
+        # save to excel. Also provides unique ID for each row to a test can be ran again
+        view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes)
+        
+        # plot the different graphs
+        view.plot_original(O, criticality)
+        view.plot_cluster(C, graph_type + " cluster graph")
+        view.plot_bipartite(B, graph_type + " bipartite graph")
+       
+        # save the different graphs by ID
+        view.save_original(O, criticality, k, graph_type, ID, do_remove_cycles, do_assumption_1)
+        view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)
 
+def retest_old_file(original_graph_filename):
+    # get all information used to make ID in excel sheet
+    k, criticality, graph_type, ID, do_remove_cycles, do_assumption_1, O = cff.create_from_file(ORIGINAL_FILE_LOCATION + original_graph_filename)
+    num_nodes = O.number_of_nodes()
+    print("retesting " + original_graph_filename)
+    
+    # create cluster and bipartite based on information from file
+    C, B = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
+    payoffs, runtimes = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1)
+
+    # save to excel. Also provides unique ID for each row to a test can be ran again
+    view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes)
+    
+    # plot the different graphs
+    view.plot_original(O, criticality)
+    view.plot_cluster(C, graph_type + " cluster graph")
+    view.plot_bipartite(B, graph_type + " bipartite graph")
+    
+    # # DONT SAVE FILE HERE BECAUSE DO NOT WANT TO OVERWRITE!
+    # # wq: should a method be made to compare two graphs and see if they are (relativley) the same?
+    # view.save_original(O, criticality, k, ID, do_remove_cycles, do_assumption_1)
+    # view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)        
+
+'''
+Generate three types of original graphs (Barabasi-Albert, Erdos-Renyi, and Watts-Strogatz) of the same size
+@params:
+    num_nodes           --> number of nodes in graph
+    num_links           --> links used for BA and ER
+    prob_rewrite_edge   --> used for WS
+@returns
+    list of three graphs (as networkx graphs!)
+    list of three graph types (as strings)
+'''
+def generate_original_graphs(num_nodes, num_links, prob_rewrite_edge):
+    # the math here is used to create three graphs with the same number of nodes and
+    # roughly the same number of edges, so the three are comparable
+    BA = nx.barabasi_albert_graph(num_nodes, num_links)
+    ER = nx.erdos_renyi_graph(num_nodes, (2 * num_links) / num_nodes)
+    avg_num_edges = (BA.number_of_edges() + ER.number_of_edges()) / 2
+    WS = nx.watts_strogatz_graph(num_nodes, round((2 * avg_num_edges) / num_nodes), prob_rewrite_edge)
+
+    original_graphs = [BA, ER, WS]
+    # assign the basic attributes of each node (criticality is random!)
+    for O in original_graphs:
+        for node_ID in O.nodes():
+            O.nodes[node_ID]["visited"] = False
+            O.nodes[node_ID]['criticality'] = random.uniform(0, 1)
+            O.nodes[node_ID]["cluster"] = -1
+    return [BA, ER, WS], ["ba", "er", "ws"]
+
+"""
+Run algorithms on cluster graph, and its corresponding bipartite graph, based on class of algorithm.
+Uses booleans remove_cycles and assumption_1 to id class of algorithm
+@params:
+    C               --> cluster graph (can be tree, assumption 1, or unmodified)
+    B               --> bipartite graph created from this cluster graph
+    k               --> number of nodes to seed
+    remove_cycles   --> if true, test knapsack, greedy, recurisve DP
+    assumption_1    --> if true, test cluster linear program
+    NOTE: bipartite algorithms will run for all, regardless of boolean variables
+@returns:
+    list of payoffs
+        Indecies are based off of excel speadsheet "Experimental_Results.xlsx" with each algorithm result
+        contained in one index. If the algorithm was not run, contains '-'
+    list of runtimes
+        Indecies are based off of excel speadsheet "Experimental_Results.xlsx" with each algorithm result
+        contained in one index. If the algorithm was not run, contains '-'
+"""
+def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
+    # set default value of array (if an algorithm is not run)
+    runtimes = []
+    payoffs = []
+    for i in range(7):
+        runtimes.append('-')
+        payoffs.append('-')
+    
+    # algorithms that work with trees
+    if remove_cycles: print(remove_cycles)
+    if assumption_1: print(assumption_1)
+    if remove_cycles:
+        # compute payoff using knapsack approach
+        start = timeit.default_timer()
+        payoff_knapsack, seedset = greedy.greedyDP(C, C.number_of_nodes(), k)
+        stop = timeit.default_timer()
+        runtimes[0] = stop - start
+        payoffs[0] = payoff_knapsack
+        print("\nGreedy DP Payoff: ", payoff_knapsack)
+        
+        # compute payoff for most basic greedy algorithm
+        start = timeit.default_timer()
+        payoff_greedy, greedy_seedset = greedy.kHighestClusters(C, k)
+        stop = timeit.default_timer()
+        runtimes[1] = stop - start
+        payoffs[1] = payoff_greedy
+        print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", payoff_greedy)
+
+        # compute payoff for recursive DP
+        start = timeit.default_timer()
+        payoff_root, payoff_no_root = dp.runRecursiveDP(C, k)
+        payoff_recursive_dp = max(payoff_root, payoff_no_root)
+        stop = timeit.default_timer()
+        runtimes[2] = stop - start
+        payoffs[2] = payoff_recursive_dp
+        print("Recursive DP payoff: ", payoff_recursive_dp)
+
+    # algorithm for assumption 1 (nodes cannot share more than two rejecting nodes, which means that there CAN be cycles)
+    if assumption_1:
+        # run linear program on cluster graph
+        start = timeit.default_timer()
+        payoff_clp = clp.lp_setup(C, k)
+        stop = timeit.default_timer()
+        runtimes[3] = stop - start
+        payoffs[3] = payoff_clp
+
+    # all general test cases (no restrictions)
+
+    # run bipartite linear program
+    start = timeit.default_timer()
+    payoff_blp = blp.solve_lp(B, k)
+    stop = timeit.default_timer()
+    runtimes[4] = stop - start
+    payoffs[4] = payoff_blp
+
+    # run bipartite greedy algorithm
+    start = timeit.default_timer()
+    payoff_greedy = baa.greedy_selection(B, k)
+    stop = timeit.default_timer()
+    runtimes[5] = stop - start
+    payoffs[5] = payoff_greedy
+
+    # run bipartite forward thinking algorithm
+    start = timeit.default_timer()
+    payoff_forward_thinking = baa.forward_thinking_greedy(B, k)
+    stop = timeit.default_timer()
+    runtimes[6] = stop - start
+    payoffs[6] = payoff_forward_thinking
+
+    return payoffs, runtimes
+
+def string_to_boolean(input):
+    if input == "false" or input == "False" or input == "0":
+        return 0
+    elif input == "true" or input == "True" or input == "1":
+        return 1
+    else:
+        print('ERROR: Invalid boolean input (try using "True", "true", or "1" [same for false variations])')
+        sys.exit()
+
+# Uncomment to run using command line!
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
-
-# crits = [0.4,0.5,0.7]
-# nn = 75
-# times = 2
-# kk = 5
-# for crit in crits:
-#     for i in range(times):
-#         main(nn, kk, crit)
+    print(len(sys.argv))
+    if len(sys.argv) == 2:
+        retest_old_file(sys.argv[1])
+    elif len(sys.argv) == 6:
+        test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    # plt.show()

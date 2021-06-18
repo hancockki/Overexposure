@@ -37,7 +37,8 @@ def plot_cluster(C, name):
         else:
             edge_labels[key] = ("na",weight_info[key])
     nx.draw_networkx_edge_labels(C, pos=pos, edge_labels=edge_labels)
-    plt.savefig("saved-graphs/" + name + ".png")
+    # # uncomment to save figure
+    # plt.savefig("saved-graphs/" + name + ".png")
 
 """ Print bipartite graph using network x. Saved to file"""
 def plot_bipartite(bipartite, name):
@@ -52,7 +53,8 @@ def plot_bipartite(bipartite, name):
     for key,val in node_labels.items():
         node_labels[key] = (key,val)
     nx.draw_networkx_labels(bipartite, pos=pos, labels=node_labels)
-    plt.savefig("saved-graphs/"+ name + "-bipartite.png")
+    # # uncomment to save figure
+    # plt.savefig("saved-graphs/"+ name + "-bipartite.png")
 
 '''
 Saves the original graph and associated criticality in a file called original_graph.txt
