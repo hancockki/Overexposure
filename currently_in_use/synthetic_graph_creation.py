@@ -8,14 +8,14 @@ Not really sure what this will be used for, but the math here makes the graphs c
 '''
 def create_test_graphs(criticality, num_nodes, num_links, prob_rewrite_edge, file_suffix):
     file_prefix = "testing_files/"
-    G_ba = create_ba(num_nodes, num_links)
-    G_er = create_er(num_nodes, (2 * num_links) / num_nodes)
-    avg_num_edges = (G_ba.number_of_edges() + G_er.number_of_edges()) / 2
+    BA = create_ba(num_nodes, num_links)
+    ER = create_er(num_nodes, (2 * num_links) / num_nodes)
+    avg_num_edges = (BA.number_of_edges() + ER.number_of_edges()) / 2
     # print(avg_num_edges)
     # print(round((2 * avg_num_edges) / num_nodes))
-    G_ws = create_ws(num_nodes, round((2 * avg_num_edges) / num_nodes), prob_rewrite_edge)
+    WS = create_ws(num_nodes, round((2 * avg_num_edges) / num_nodes), prob_rewrite_edge)
 
-    original_graphs = [['ba', G_ba], ['er',G_er], ['ws',G_ws]]
+    original_graphs = [['ba', BA], ['er', ER], ['ws', WS]]
     cluster_graphs = []
     total_edges = 0
     for G in original_graphs:

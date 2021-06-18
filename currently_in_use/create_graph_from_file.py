@@ -103,10 +103,10 @@ Takes a file and has different returns based on input
     If the file is a cluster, returns a cluster graph
 
 @params
-    filename -> file input
+    filename --> file input
 @returns
-    IF ORIGINAL c -> the criticality of the original graph
-    G -> a graph
+    IF ORIGINAL c --> the criticality of the original graph
+    G --> a graph
 '''
 def create_from_file(filename):
     file = open(filename,"r")
@@ -118,17 +118,22 @@ def create_from_file(filename):
     if lines[0] == CLUSTER:
         return create_cluster(lines[1:])
     elif lines[0] == ORIGINAL:
-        crit = float(re.split(" ", lines[1])[1])
-        return crit, create_original(lines[2:])
+        k = int(re.split(" ", lines[1])[1])
+        crit = float(re.split(" ", lines[2])[1])
+        graph_type = re.split(" ", lines[3])[1]
+        ID = re.split(" ", lines[4])[1]
+        remove_cycles = bool(int(re.split(" ", lines[5])[1]))
+        assumption_1 = bool(int(re.split(" ", lines[6])[1]))
+        return k, crit, graph_type, ID, remove_cycles, assumption_1, create_original(lines[7:])
 
 '''
 Creates an original graph based on content of file. Will ignore comments marked with a '#'
 at the begining of a line
 @params:
-    lines ->    the lines in the file, excluding the first two because these indicate
+    lines -->    the lines in the file, excluding the first two because these indicate
                 that just indicated it was and original and its criticality
 @returns:
-    G ->        an orginal graph!
+    G -->        an orginal graph!
 '''
 def create_original(lines):
     end_preamble = 0 # used to offset comments
@@ -151,9 +156,9 @@ def create_original(lines):
 Creates a cluster graph based on content of file. Will ignore comments marked with a '#'
 at the begining of a line
 @params:
-    lines ->   the lines in the file, excluding the first line because that just indicated it was a cluster graph
+    lines -->   the lines in the file, excluding the first line because that just indicated it was a cluster graph
 @returns:
-    G ->       an orginal graph!
+    G -->       an orginal graph!
 '''
 def create_cluster(lines):
     end_preamble = 0 # used to offset comments
@@ -175,7 +180,7 @@ Takes attributes and creates an edge in graph G. This is used in both create clu
 and create original
 
 @params:
-    attrib_info -> the info for edge, including possible attributes
+    attrib_info --> the info for edge, including possible attributes
 '''
 def create_edge(attrib_info):
     edge = "not assigned"
