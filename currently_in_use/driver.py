@@ -44,21 +44,24 @@ a cluster graph which satisfies the properties.
 """
 import graph_creation
 import view
-import DP_algorithms as dp
-import greedy_approx_algorithms as greedy
-import brute_force as bf
-import bipartite_linear_program as blp
+import general_case
+import tree_case
+import assumption_one_case
+# import DP_algorithms as dp
+# import greedy_approx_algorithms as greedy
+# import brute_force as bf
+# import bipartite_linear_program as blp
+# import bipartite_approx_algs as baa
+# import cluster_linear_program as clp
 import create_graph_from_file as cff
 import networkx as nx
 import matplotlib.pyplot as plt
 import sys
 import openpyxl
 import random
-import cluster_linear_program as clp
 import timeit
 from datetime import datetime
 import networkx as nx
-import bipartite_approx_algs as baa
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
 FILE_DIRECTORY_PREFIX = ""#"currently_in_use/"
@@ -142,6 +145,8 @@ def retest_old_file(original_graph_filename):
     view.plot_original(O, criticality)
     view.plot_cluster(C, graph_type + " cluster graph")
     view.plot_bipartite(B, graph_type + " bipartite graph")
+    print(C.edges.data())
+
     
     # # DONT SAVE FILE HERE BECAUSE DO NOT WANT TO OVERWRITE!
     # # wq: should a method be made to compare two graphs and see if they are (relativley) the same?
@@ -207,34 +212,37 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
     if remove_cycles:
         # compute payoff using knapsack approach
         start = timeit.default_timer()
-        payoff_knapsack, seedset = greedy.greedyDP(C, C.number_of_nodes(), k)
+        payoff_knapsack, seedset = tree_case.greedyDP(C, C.number_of_nodes(), k)
         stop = timeit.default_timer()
         runtimes[0] = stop - start
         payoffs[0] = payoff_knapsack
         print("\nGreedy DP Payoff: ", payoff_knapsack)
-        
-        # compute payoff for most basic greedy algorithm
-        start = timeit.default_timer()
-        payoff_greedy, greedy_seedset = greedy.kHighestClusters(C, k)
-        stop = timeit.default_timer()
-        runtimes[1] = stop - start
-        payoffs[1] = payoff_greedy
-        print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", payoff_greedy)
 
         # compute payoff for recursive DP
         start = timeit.default_timer()
-        payoff_root, payoff_no_root = dp.runRecursiveDP(C, k)
+        payoff_root, payoff_no_root = tree_case.runRecursiveDP(C, k)
         payoff_recursive_dp = max(payoff_root, payoff_no_root)
         stop = timeit.default_timer()
         runtimes[2] = stop - start
         payoffs[2] = payoff_recursive_dp
         print("Recursive DP payoff: ", payoff_recursive_dp)
 
+        # if there are no cycles, assumption 1 holds true to they can be run
+        assumption_1 = True
+
     # algorithm for assumption 1 (nodes cannot share more than two rejecting nodes, which means that there CAN be cycles)
     if assumption_1:
+        # compute payoff for most basic greedy algorithm
+        start = timeit.default_timer()
+        payoff_greedy, greedy_seedset = assumption_one_case.kHighestClusters(C, k)
+        stop = timeit.default_timer()
+        runtimes[1] = stop - start
+        payoffs[1] = payoff_greedy
+        print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", payoff_greedy)
+
         # run linear program on cluster graph
         start = timeit.default_timer()
-        payoff_clp = clp.lp_setup(C, k)
+        payoff_clp = assumption_one_case.lp_setup(C, k)
         stop = timeit.default_timer()
         runtimes[3] = stop - start
         payoffs[3] = payoff_clp
@@ -243,21 +251,21 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
 
     # run bipartite linear program
     start = timeit.default_timer()
-    payoff_blp = blp.solve_lp(B, k)
+    payoff_blp = general_case.solve_blp(B, k)
     stop = timeit.default_timer()
     runtimes[4] = stop - start
     payoffs[4] = payoff_blp
 
     # run bipartite greedy algorithm
     start = timeit.default_timer()
-    payoff_greedy = baa.greedy_selection(B, k)
+    payoff_greedy = general_case.greedy_selection(B, k)
     stop = timeit.default_timer()
     runtimes[5] = stop - start
     payoffs[5] = payoff_greedy
 
     # run bipartite forward thinking algorithm
     start = timeit.default_timer()
-    payoff_forward_thinking = baa.forward_thinking_greedy(B, k)
+    payoff_forward_thinking = general_case.forward_thinking_greedy(B, k)
     stop = timeit.default_timer()
     runtimes[6] = stop - start
     payoffs[6] = payoff_forward_thinking
@@ -281,3 +289,7 @@ if __name__ == "__main__":
     elif len(sys.argv) == 6:
         test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     # plt.show()
+
+# test_new_file("100","5","0.5","True","True")
+retest_old_file("34.txt")
+# plt.show()

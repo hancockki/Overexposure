@@ -231,6 +231,7 @@ def runTests(num_nodes, k, criticality):
         printBipartite(bipartite, graph_type)
     # plt.show()
 
+
 """ Print bipartite graph using network x. Saved to file"""
 def printBipartite(bipartite, name):
     print("printing bipartite graph")
@@ -354,3 +355,76 @@ if __name__ == "__main__":
 # for crit in crits:
 #     for i in range(times):
 #         main(nn, kk, crit)
+
+
+# test_a_file()
+# def test_a_file():
+#     filename = "4.txt"
+#     k, criticality, graph_type, ID, remove_cycles, assumption_1, O = cff.create_from_file(filename)    
+#     num_nodes = O.number_of_nodes()
+#     G = cc.testOriginaltoCluster(O, num_nodes, criticality, remove_cycles, assumption_1)
+#     #compute payoff for greedy DP
+#     start = timeit.default_timer()
+#     max_val_greedyDP, seedset = greedy.greedyDP(G, G.number_of_nodes(), k)
+#     stop = timeit.default_timer()
+#     runtime_greedy_DP = stop - start
+
+#     store_info(G,k)
+#     print("\nGreedy DP Payoff: ", max_val_greedyDP)
+        
+#     #compute payoff for most basic greedy algorithm
+#     start = timeit.default_timer()
+#     greedy_payoff, greedy_seedset = greedy.kHighestClusters(G, k)
+#     stop = timeit.default_timer()
+#     runtime_greedy = stop - start
+#     print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", greedy_payoff)
+
+#     #compute payoff for recursive DP
+#     start = timeit.default_timer()
+#     payoff_root, payoff_no_root = dp.runRecursiveDP(G, k)
+#     payoff_recursive_dp = max(payoff_root, payoff_no_root)
+#     stop = timeit.default_timer()
+#     runtime_recursive_DP = stop - start
+#     print("Recursive DP payoff: ", payoff_recursive_dp)
+
+#     #run linear program
+#     start = timeit.default_timer()
+#     payoff_clp = clp.lp_setup(G, k)
+#     stop = timeit.default_timer()
+#     runtime_cluster_LP = stop - start
+
+#     #run bipartite linear program
+#     bipartite = mbg.graph_to_bipartite(G)
+#     start = timeit.default_timer()
+#     payoff_blp = blp.solve_lp(bipartite, k)
+#     stop = timeit.default_timer()
+#     runtime_bipartite_LP = stop - start
+
+#     start = timeit.default_timer()
+#     payoff_greedy = baa.greedy_selection(bipartite, k)
+#     stop = timeit.default_timer()
+
+#     #compute payoff using brute force algorithm --> uncomment out if you want to run
+#     #best_payoff_selection,best_payoff = bf.computePayoff(bipartite, k)
+#     #print("Brute Force payoff: ", best_payoff_selection, best_payoff)
+
+#     runtime_greedy_bipartite = stop - start
+
+#     start = timeit.default_timer()
+#     payoff_forward_thinking = baa.forward_thinking_greedy(bipartite, k)
+#     stop = timeit.default_timer()
+#     runtime_forward_thinking = stop - start
+
+#     #write the results to excel file
+#     if graph_type == "ba-cycle" or graph_type == "ws-cycle" or graph_type == "er-cycle" or graph_type == "cluster cycle":
+#         write_results("-","-", "-", "-", "-", \
+#             "-", "-", payoff_blp, payoff_greedy, payoff_forward_thinking, "-","-", "-", "-",runtime_bipartite_LP, \
+#             runtime_greedy_bipartite, runtime_forward_thinking, num_nodes,k, graph_type, criticality)
+#     else:
+#         write_results(max_val_greedyDP,greedy_payoff, payoff_recursive_dp, payoff_clp, payoff_blp, \
+#             payoff_greedy, payoff_forward_thinking, "-", "-", "-", runtime_greedy_DP, runtime_greedy, runtime_recursive_DP, \
+#             runtime_cluster_LP, runtime_bipartite_LP, runtime_greedy_bipartite, runtime_forward_thinking, num_nodes,k, graph_type, criticality)
+#     #print cluster graph and bipartite graph
+#     #cc.showOriginalGraph(original, criticality)
+#     printGraph(G, graph_type)
+#     printBipartite(bipartite, graph_type)

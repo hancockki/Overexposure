@@ -92,7 +92,7 @@ COMMENT = '#' # acts as comment character. will be ignored if read in file
 CLUSTER = 'c' # identify file as cluster graph format
 ORIGINAL = 'o' # identify file as originial graph format
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
-FILE_DIRECTORY_PREFIX = ""
+FILE_DIRECTORY_PREFIX = "currently_in_use/"
 
 global G
 G = nx.Graph()
@@ -109,7 +109,7 @@ Takes a file and has different returns based on input
     G --> a graph
 '''
 def create_from_file(filename):
-    file = open(filename,"r")
+    file = open(FILE_DIRECTORY_PREFIX + filename,"r")
     if file.mode == 'r':
         contents = file.read()
     lines = re.split("\n", contents)
