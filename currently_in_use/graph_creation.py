@@ -61,6 +61,9 @@ def generate_test_graphs(O, threshold, do_remove_cycles, do_assumption_1):
         if C != False:
             if do_remove_cycles:
                 remove_cycles(C)
+                # if has_more_two_shared_rejects(C):
+                #     print("REMOVING CYCLES DOES NOT GUARANTEE ASS 1 HOLDS")
+                #     sys.exit()
                 do_while = False
             # end the while loop after one run if assumption 1 is not enforced
             if do_assumption_1:

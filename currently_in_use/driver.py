@@ -215,8 +215,8 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
         payoffs.append('-')
     
     # algorithms that work with trees
-    if remove_cycles: print(remove_cycles)
-    if assumption_1: print(assumption_1)
+    if remove_cycles: print("Remove Cycs: " + str(remove_cycles))
+    if assumption_1: print("Ass 1: " + str(assumption_1))
     if remove_cycles:
         # compute payoff using knapsack approach
         start = timeit.default_timer()
@@ -235,8 +235,9 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
         payoffs[2] = payoff_recursive_dp
         print("Recursive DP payoff: ", payoff_recursive_dp)
 
-        # if there are no cycles, assumption 1 holds true to they can be run
-        assumption_1 = True
+        # # if there are no cycles, assumption 1 holds true to they can be run
+        # # UPON TESTING, THIS IS FALSE!!!!!!!!!!!
+        # assumption_1 = True
 
     # algorithm for assumption 1 (nodes cannot share more than two rejecting nodes, which means that there CAN be cycles)
     if assumption_1:
@@ -294,18 +295,20 @@ if __name__ == "__main__":
     print(len(sys.argv))
     if len(sys.argv) == 2:
         retest_old_file(sys.argv[1])
-    elif len(sys.argv) == 6:
+    elif len(sys.argv) == 6 or len(sys.argv) == 7:
         # test_if_saved_graphs_same(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+        if len(sys.argv) == 7:
+            if string_to_boolean(sys.argv[6]):
+                plt.show()
     else:
         print('ERROR: Invalid input')
         sys.exit()
-    # plt.show()
 
 # test_if_saved_graphs_same("100","5","0.5","True","True")
 # test_new_file("100","5","0.5","True","True")
 # test_new_file("40","2","1","True","True")
-# retest_old_file("60.txt")
+# retest_old_file("80.txt")
 # plt.show()
 
 # '''

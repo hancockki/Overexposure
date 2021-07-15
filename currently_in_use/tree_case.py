@@ -152,63 +152,6 @@ def partitions(n, k): #stars and bars, k subtrees and n seeds to allocate among 
         yield [b-a-1 for a, b in zip((-1,)+c, c+(n+k-1,))]
 
 
-def greedyDP(G, i, k): #doesn't consider subtrees
-    #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
-    #i = number_of_nodes(G)
-    #k = number of seeds
-    storePayoff = [['a'] * i for _ in range(k)] #store payoff
-    storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
-    tree = nx.bfs_tree(G, 1)
-    for numSeeds in range(0,k): #bottom up DP
-        nodes = list(reversed(list((nx.topological_sort(tree))))) #look at nodes in reverse topological order
-        for j in range(0,i): 
-            if j == 0 and numSeeds == 0: #first entry
-                #breakpoint()
-                storeSeeds[numSeeds][j] = [nodes[j]]
-                nodeWeight = computeNegPayoff(G, nodes[j])
-                storePayoff[numSeeds][j] = nodeWeight
-                #print("first entry,", storePayoff)
-
-            elif numSeeds == 0: #if there is only one seed to consider, aka first row
-                last = storePayoff[numSeeds][j-1]
-                nodeWeight = computeNegPayoff(G, nodes[j])
-                if nodeWeight > last:
-                    storePayoff[numSeeds][j]=nodeWeight
-                    storeSeeds[numSeeds][j] = [nodes[j]]
-                else:
-                    storePayoff[numSeeds][j]= last
-                    table = storeSeeds[numSeeds][j-1]
-                    table2 = table[:]
-                    storeSeeds[numSeeds][j] = table2
-                #print("num seeds 0",storePayoff)
-            elif j == 0: #we only consider first node, so its simple
-                storePayoff[numSeeds][j] = storePayoff[numSeeds - 1][j]
-                storeSeeds[numSeeds][j] = storeSeeds[numSeeds - 1][j][:]
-            else: #where DP comes in
-                last = storePayoff[numSeeds-1][j-1] #diagonal-up entry
-                nextGuess = computeNegPayoff(G, nodes[j]) + last
-                for lastNodes in storeSeeds[numSeeds-1][j-1]: #dont want to double count edges!
-                    neighbors = nx.neighbors(G, lastNodes)
-                    for neighbor in neighbors:
-                        if neighbor == nodes[j]:
-                            add = G.get_edge_data(lastNodes, nodes[j]) #neighbor of new node is current node
-                            add = add['weight']
-                            nextGuess += add
-                lastEntry = storePayoff[numSeeds][j-1] #left entry
-                lastEntryUp = storePayoff[numSeeds-1][j]
-                tup = [(storeSeeds[numSeeds][j-1], lastEntry), (storeSeeds[numSeeds-1][j], lastEntryUp), (storeSeeds[numSeeds-1][j-1], nextGuess)] # , (storeSeeds[numSeeds-1][j-1], last)
-                tup.sort(key = lambda x: x[1])
-                nextList = tup[-1][0][:]
-                storeSeeds[numSeeds][j] = nextList
-                storePayoff[numSeeds][j] = tup[-1][1]
-                if tup[-1][0] == storeSeeds[numSeeds-1][j-1]:
-                    storeSeeds[numSeeds][j].append(nodes[j])
-    maxVal = storePayoff[k-1][i-1]
-    for j in range(0,k):
-        if storePayoff[j][i-1] > maxVal:
-            maxVal = storePayoff[j][i-1]
-    return (maxVal, storeSeeds[j][i-1])
-
 # def greedyDP(G, i, k): #doesn't consider subtrees
 #     #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
 #     #i = number_of_nodes(G)
@@ -220,36 +163,29 @@ def greedyDP(G, i, k): #doesn't consider subtrees
 #         nodes = list(reversed(list((nx.topological_sort(tree))))) #look at nodes in reverse topological order
 #         for j in range(0,i): 
 #             if j == 0 and numSeeds == 0: #first entry
-#                 negative_edges = {}
-#                 negative_weight = store_edges(negative_edges, nodes[j], G)
-#                 # [neg, pos, edges, seed set]
-#                 storeSeeds[numSeeds][j] = [negative_weight, G.nodes[nodes[j]]['weight'], negative_edges, nodes[j]]
-#                 storePayoff[numSeeds][j] = G.nodes[nodes[j]]['weight'] - negative_weight
+#                 #breakpoint()
+#                 storeSeeds[numSeeds][j] = [nodes[j]]
+#                 nodeWeight = computeNegPayoff(G, nodes[j])
+#                 storePayoff[numSeeds][j] = nodeWeight
 #                 #print("first entry,", storePayoff)
 
 #             elif numSeeds == 0: #if there is only one seed to consider, aka first row
 #                 last = storePayoff[numSeeds][j-1]
-#                 negative_edges = {}
-#                 negative_weight = store_edges(negative_edges, nodes[j], G)
-#                 nodeWeight = G.nodes[nodes[j]]['weight'] - negative_weight
+#                 nodeWeight = computeNegPayoff(G, nodes[j])
 #                 if nodeWeight > last:
 #                     storePayoff[numSeeds][j]=nodeWeight
-#                     storeSeeds[numSeeds][j] = [negative_weight, G.nodes[nodes[j]]['weight'], negative_edges, nodes[j]]
+#                     storeSeeds[numSeeds][j] = [nodes[j]]
 #                 else:
 #                     storePayoff[numSeeds][j]= last
 #                     table = storeSeeds[numSeeds][j-1]
-#                     copy = table[:]
-#                     storeSeeds[numSeeds][j] = copy
+#                     table2 = table[:]
+#                     storeSeeds[numSeeds][j] = table2
 #                 #print("num seeds 0",storePayoff)
 #             elif j == 0: #we only consider first node, so its simple
 #                 storePayoff[numSeeds][j] = storePayoff[numSeeds - 1][j]
 #                 storeSeeds[numSeeds][j] = storeSeeds[numSeeds - 1][j][:]
 #             else: #where DP comes in
-#                 last = storeSeeds[numSeeds-1][j-1] #diagonal-up entry
-#                 next_pos_weights = last[1]
-#                 next_neg_weights = last[2]
-#                 next_edges = last[3]
-#                 next_seeds = last[4]
+#                 last = storePayoff[numSeeds-1][j-1] #diagonal-up entry
 #                 nextGuess = computeNegPayoff(G, nodes[j]) + last
 #                 for lastNodes in storeSeeds[numSeeds-1][j-1]: #dont want to double count edges!
 #                     neighbors = nx.neighbors(G, lastNodes)
@@ -260,7 +196,7 @@ def greedyDP(G, i, k): #doesn't consider subtrees
 #                             nextGuess += add
 #                 lastEntry = storePayoff[numSeeds][j-1] #left entry
 #                 lastEntryUp = storePayoff[numSeeds-1][j]
-#                 tup = [(storeSeeds[numSeeds][j-1], lastEntry), (storeSeeds[numSeeds-1][j], lastEntryUp), (storeSeeds[numSeeds-1][j-1], nextGuess)]
+#                 tup = [(storeSeeds[numSeeds][j-1], lastEntry), (storeSeeds[numSeeds-1][j], lastEntryUp), (storeSeeds[numSeeds-1][j-1], nextGuess)] # , (storeSeeds[numSeeds-1][j-1], last)
 #                 tup.sort(key = lambda x: x[1])
 #                 nextList = tup[-1][0][:]
 #                 storeSeeds[numSeeds][j] = nextList
@@ -273,22 +209,83 @@ def greedyDP(G, i, k): #doesn't consider subtrees
 #             maxVal = storePayoff[j][i-1]
 #     return (maxVal, storeSeeds[j][i-1])
 
-# def store_edges(negative_edge_set, node, G):
-#     neighbors = nx.neighbors(G, node)
-#     negative_weights = 0
-#     for neighbor in neighbors:
-#         edge = ""
-#         if node < neighbor:
-#             edge = str(node) + "," + str(neighbor)
-#         else:
-#             edge = str(neighbor) + "," + str(node)
-#         # if this edge has not been considered, add to negative calculations
-#         if not negative_edge_set.contains(edge):
-#             incedent_edge_weight = G.get_edge_data(node, neighbor)['weight']
-#             negative_weights += incedent_edge_wight
-#             negative_edge_set.add(edge)
-#     #print("node weight is:", nodeWeight)
-#     return negative_weights
+def greedyDP(G, i, k): #doesn't consider subtrees
+    #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster
+    #i = number_of_nodes(G)
+    #k = number of seeds
+    storePayoff = [['a'] * i for _ in range(k)] #store payoff
+    storeSeeds = [[[]] * i for _ in range(k)] #store seeds at each stage
+    tree = nx.bfs_tree(G, 1)
+    for numSeeds in range(0,k): #bottom up DP
+        nodes = list(reversed(list((nx.topological_sort(tree))))) #look at nodes in reverse topological order
+        for j in range(0,i): 
+            if j == 0 and numSeeds == 0: #first entry
+                negative_edges = set()
+                negative_weight = store_edges(negative_edges, nodes[j], G)
+                # [neg, pos, edges, seed set]
+                storeSeeds[numSeeds][j] = [negative_weight, G.nodes[nodes[j]]['weight'], negative_edges, [nodes[j]]]
+                storePayoff[numSeeds][j] = G.nodes[nodes[j]]['weight'] - negative_weight
+                #print("first entry,", storePayoff)
+
+            elif numSeeds == 0: #if there is only one seed to consider, aka first row
+                last = storePayoff[numSeeds][j-1]
+                negative_edges = set()
+                negative_weight = store_edges(negative_edges, nodes[j], G)
+                nodeWeight = G.nodes[nodes[j]]['weight'] - negative_weight
+                if nodeWeight > last:
+                    storePayoff[numSeeds][j]=nodeWeight
+                    storeSeeds[numSeeds][j] = [negative_weight, G.nodes[nodes[j]]['weight'], negative_edges, [nodes[j]]]
+                else:
+                    storePayoff[numSeeds][j]= last
+                    table = storeSeeds[numSeeds][j-1]
+                    copy = table[:]
+                    storeSeeds[numSeeds][j] = copy
+                #print("num seeds 0",storePayoff)
+            elif j == 0: #we only consider first node, so its simple
+                storePayoff[numSeeds][j] = storePayoff[numSeeds - 1][j]
+                storeSeeds[numSeeds][j] = storeSeeds[numSeeds - 1][j][:]
+            else: #where DP comes in
+                last = storeSeeds[numSeeds-1][j-1] #diagonal-up entry
+                # diagnoal ups positive plus the new current node's positive
+                next_pos_weights = last[1] + G.nodes[nodes[j]]['weight']
+                # all the negative edges accounted for in diagonal ups (will be updated with new soon)
+                next_edges = last[2].copy()
+                # negative edges acounted for in diabinal ups, in addition to any new edges accounted for (this updates set above)
+                next_neg_weights = last[0] + store_edges(next_edges, nodes[j], G)
+                # updated seed set
+                next_seeds = last[3][:]
+                next_seeds.append(nodes[j])
+                nextGuess = next_pos_weights - next_neg_weights
+                
+                leftEntry = storePayoff[numSeeds][j-1] #left entry
+                lastEntryUp = storePayoff[numSeeds-1][j]
+                tup = [(storeSeeds[numSeeds][j-1], leftEntry), (storeSeeds[numSeeds-1][j], lastEntryUp), ([next_neg_weights, next_pos_weights, next_edges, next_seeds], nextGuess)]
+                tup.sort(key = lambda x: x[1])
+                nextList = tup[-1][0][:]
+                storeSeeds[numSeeds][j] = nextList
+                storePayoff[numSeeds][j] = tup[-1][1]
+    maxVal = storePayoff[k-1][i-1]
+    for j in range(0,k):
+        if storePayoff[j][i-1] > maxVal:
+            maxVal = storePayoff[j][i-1]
+    return (maxVal, storeSeeds[j][i-1][3])
+
+def store_edges(negative_edge_set, node, G):
+    neighbors = nx.neighbors(G, node)
+    negative_weights = 0
+    for neighbor in neighbors:
+        edge = ""
+        if node < neighbor:
+            edge = str(node) + "," + str(neighbor)
+        else:
+            edge = str(neighbor) + "," + str(node)
+        # if this edge has not been considered, add to negative calculations
+        if not edge in negative_edge_set:
+            incedent_edge_weight = G.get_edge_data(node, neighbor)['weight']
+            negative_weights += incedent_edge_weight
+            negative_edge_set.add(edge)
+    #print("node weight is:", nodeWeight)
+    return negative_weights
 
 def knapsack(G, i, k): #doesn't consider subtrees
     #This is different since we are considering each node's weight in the graph to be the number of accepting nodes in a given cluster

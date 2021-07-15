@@ -1,0 +1,14 @@
+c
+# crit: 0.5
+# removed_cycles: 1
+# satisfied_assumption_1: 1
+# ID: 83
+# Nodes: 4
+# Edges: 3
+6
+1
+1
+1
+0 1 2 -8 -1
+0 2 4 -26 -99 -92 -14
+0 3 2 0 -44
