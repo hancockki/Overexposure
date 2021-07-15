@@ -81,15 +81,15 @@ The format used here is described in create_graph_from_file class
 '''
 def save_original(O, c, k, graph_type, ID, remove_cycles, assumption_1):
     filename = FILE_DIRECTORY_PREFIX + ORIGINAL_FILE_LOCATION + ID + ".txt"
-    if remove_cycles == "false" or remove_cycles == "False" or remove_cycles == "0":
-        remove_cycles = 0
-    else:
-        remove_cycles = 1
+    # if remove_cycles == "false" or remove_cycles == "False" or remove_cycles == "0":
+    #     remove_cycles = 0
+    # else:
+    #     remove_cycles = 1
     
-    if assumption_1 == "false" or assumption_1 == "False" or assumption_1 == "0":
-        assumption_1 = 0
-    else:
-        assumption_1 = 1
+    # if assumption_1 == "false" or assumption_1 == "False" or assumption_1 == "0":
+    #     assumption_1 = 0
+    # else:
+    #     assumption_1 = 1
     
     with open(filename, 'w') as graph_info:
         graph_info.write("o\n")

@@ -98,7 +98,7 @@ Not really sure what this will be used for, but the math here makes the graphs c
 '''
 
 #main function, used for calling things
-def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1):
+def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, plot_graphs=False):
     num_nodes = int(num_nodes)
     k = int(k)
     criticality = float(criticality)
@@ -120,29 +120,40 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1):
         view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes, opt_seeds)
         
         # plot the different graphs
-        view.plot_original(O, criticality)
-        view.plot_cluster(C, graph_type + " cluster graph")
-        view.plot_bipartite(B, graph_type + " bipartite graph")
+        if plot_graphs:
+            # get error if attempt to plot more than 500 nodes
+            if num_nodes < 500:
+                view.plot_original(O, criticality)
+            if len(C.nodes()) < 500:
+                view.plot_cluster(C, graph_type + " cluster graph")
+            if len(B.nodes()) < 500:
+                view.plot_bipartite(B, graph_type + " bipartite graph")
        
         # save the different graphs by ID
         view.save_original(O, criticality, k, graph_type, ID, do_remove_cycles, do_assumption_1)
         view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)
         # make sure these are clear so original graphs do not accidentally interfere with each other
+
+        if plot_graphs:
+            plt.show()
+
         C.clear()
         B.clear()
 
-def retest_old_file(original_graph_filename):
+def retest_old_file(original_graph_filename, plot_graphs=False):
     # get all information used to make ID in excel sheet
     if original_graph_filename[-4:] != ".txt":
        original_graph_filename = original_graph_filename + ".txt"
     k, criticality, graph_type, ID, do_remove_cycles, do_assumption_1, O = cff.create_from_file(ORIGINAL_FILE_LOCATION + original_graph_filename)
     num_nodes = O.number_of_nodes()
     print("retesting " + original_graph_filename)
+    if do_remove_cycles: print("Remove Cycs: " + str(do_remove_cycles))
+    if do_assumption_1: print("Ass 1: " + str(do_assumption_1))
     
     # create cluster and bipartite based on information from file
     C, B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
     if loops_through_while != 1:
-        print("Previous tests of this graph may not have satisfied assumption 1")
+        print("Criticalities were reset")
         sys.exit()
     payoffs, runtimes, opt_seeds= run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1)
 
@@ -150,9 +161,15 @@ def retest_old_file(original_graph_filename):
     view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes, opt_seeds)
     
     # plot the different graphs
-    view.plot_original(O, criticality)
-    view.plot_cluster(C, graph_type + " cluster graph")
-    view.plot_bipartite(B, graph_type + " bipartite graph")
+    if plot_graphs:
+        # get error if attempt to plot more than 500 nodes
+        if num_nodes < 500:
+            view.plot_original(O, criticality)
+        if len(C.nodes()) < 500:
+            view.plot_cluster(C, graph_type + " cluster graph")
+        if len(B.nodes()) < 500:
+            view.plot_bipartite(B, graph_type + " bipartite graph")
+        plt.show()
     print(C.edges.data())
 
     
@@ -262,22 +279,22 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
     start = timeit.default_timer()
     payoff_blp, blp_seeds = general_case.solve_blp(B, k)
     stop = timeit.default_timer()
-    runtimes[4] = stop - start
-    payoffs[4] = payoff_blp
+    runtimes[6] = stop - start
+    payoffs[6] = payoff_blp
 
     # run bipartite greedy algorithm
     start = timeit.default_timer()
     payoff_greedy = general_case.greedy_selection(B, k)
     stop = timeit.default_timer()
-    runtimes[5] = stop - start
-    payoffs[5] = payoff_greedy
+    runtimes[4] = stop - start
+    payoffs[4] = payoff_greedy
 
     # run bipartite forward thinking algorithm
     start = timeit.default_timer()
     payoff_forward_thinking = general_case.forward_thinking_greedy(B, k)
     stop = timeit.default_timer()
-    runtimes[6] = stop - start
-    payoffs[6] = payoff_forward_thinking
+    runtimes[5] = stop - start
+    payoffs[5] = payoff_forward_thinking
 
     return payoffs, runtimes, blp_seeds
 
@@ -295,12 +312,13 @@ if __name__ == "__main__":
     print(len(sys.argv))
     if len(sys.argv) == 2:
         retest_old_file(sys.argv[1])
-    elif len(sys.argv) == 6 or len(sys.argv) == 7:
+    elif len(sys.argv) == 3:
+        retest_old_file(sys.argv[1], string_to_boolean(sys.argv[2]))
+    elif len(sys.argv) == 6:
         # test_if_saved_graphs_same(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-        if len(sys.argv) == 7:
-            if string_to_boolean(sys.argv[6]):
-                plt.show()
+    elif len(sys.argv) == 7:
+        test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], string_to_boolean(sys.argv[6]))
     else:
         print('ERROR: Invalid input')
         sys.exit()
