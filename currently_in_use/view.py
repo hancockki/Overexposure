@@ -43,16 +43,30 @@ def plot_cluster(C, name):
 """ Print bipartite graph using network x. Saved to file"""
 def plot_bipartite(bipartite, name):
     print("printing bipartite graph")
+    color_map = []
+    # loop through nodes , creating color map and node lables
+    for nodeID in bipartite.nodes():
+        if isinstance(nodeID, str):
+            # reject 
+            color_map.append('red')       
+        else:
+            # accept 
+            color_map.append('skyblue')
+    # get the nodes on one side of the bipartite
+    top_nodes = {n for n, d in bipartite.nodes(data=True) if d["bipartite"] == 0}
+    pos = nx.bipartite_layout(bipartite, top_nodes)
     plt.figure(name+ "-bipartite")
-    pos = nx.spring_layout(bipartite)
-    nx.draw(bipartite, pos)
-
+    nx.draw_networkx(bipartite, node_color = color_map, pos = pos, arrows=False, with_labels=False)
+    
     node_labels = nx.get_node_attributes(bipartite,'weight')
     print(node_labels)
     # do (id, weight) pair for lable instead of just weight
     for key,val in node_labels.items():
-        node_labels[key] = (key,val)
-    nx.draw_networkx_labels(bipartite, pos=pos, labels=node_labels)
+        if not isinstance(key, str):
+            node_labels[key] = (key,val)
+        else:
+            node_labels[key] = key
+    nx.draw_networkx_labels(bipartite, pos=pos, labels=node_labels)    
     # # uncomment to save figure
     # plt.savefig("saved-graphs/"+ name + "-bipartite.png")
 
@@ -67,6 +81,16 @@ The format used here is described in create_graph_from_file class
 '''
 def save_original(O, c, k, graph_type, ID, remove_cycles, assumption_1):
     filename = FILE_DIRECTORY_PREFIX + ORIGINAL_FILE_LOCATION + ID + ".txt"
+    if remove_cycles == "false" or remove_cycles == "False" or remove_cycles == "0":
+        remove_cycles = 0
+    else:
+        remove_cycles = 1
+    
+    if assumption_1 == "false" or assumption_1 == "False" or assumption_1 == "0":
+        assumption_1 = 0
+    else:
+        assumption_1 = 1
+    
     with open(filename, 'w') as graph_info:
         graph_info.write("o\n")
         graph_info.write("num_seeded: " + str(k) + "\n")        
@@ -123,7 +147,7 @@ def generate_ID():
     return ID
 
 """ Write results to an excel sheet stored in the currently_in_use/tests folder """
-def write_results_to_excel(preamble, payoffs, runtimes):
+def write_results_to_excel(preamble, payoffs, runtimes, opt_seeds):
     print(preamble)
     print(payoffs)
     print(runtimes)
@@ -132,6 +156,6 @@ def write_results_to_excel(preamble, payoffs, runtimes):
     sheets = wb.sheetnames
     payoff_sheet = wb[sheets[0]]
     runtime_sheet = wb[sheets[1]]
-    payoff_sheet.append(preamble + payoffs)
+    payoff_sheet.append(preamble + payoffs + opt_seeds)
     runtime_sheet.append(preamble + runtimes)
     wb.save(FILE_DIRECTORY_PREFIX + 'Experimental_Results.xlsx')

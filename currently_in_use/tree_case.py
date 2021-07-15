@@ -196,23 +196,13 @@ def greedyDP(G, i, k): #doesn't consider subtrees
                             nextGuess += add
                 lastEntry = storePayoff[numSeeds][j-1] #left entry
                 lastEntryUp = storePayoff[numSeeds-1][j]
-                tup = [(storeSeeds[numSeeds][j-1], lastEntry), (storeSeeds[numSeeds-1][j], lastEntryUp), (storeSeeds[numSeeds-1][j-1], nextGuess), (storeSeeds[numSeeds-1][j-1], last)]
+                tup = [(storeSeeds[numSeeds][j-1], lastEntry), (storeSeeds[numSeeds-1][j], lastEntryUp), (storeSeeds[numSeeds-1][j-1], nextGuess)] # , (storeSeeds[numSeeds-1][j-1], last)
                 tup.sort(key = lambda x: x[1])
                 nextList = tup[-1][0][:]
                 storeSeeds[numSeeds][j] = nextList
                 storePayoff[numSeeds][j] = tup[-1][1]
                 if tup[-1][0] == storeSeeds[numSeeds-1][j-1]:
                     storeSeeds[numSeeds][j].append(nodes[j])
-                # if nextGuess > lastEntryUp:
-                #     storePayoff[numSeeds][j] = nextGuess
-                #     storeSeeds[numSeeds][j] = storeSeeds[numSeeds-1][j-1][:]
-                #     storeSeeds[numSeeds][j].append(nodes[j])
-                # else:
-                #     storePayoff[numSeeds][j] = lastEntryUp
-                #     storeSeeds[numSeeds][j] = storeSeeds[numSeeds-1][j][:]
-    # f = open("make_matrix.txt", "a")
-    # f.write("\n  regular DP payoff: " + str(storePayoff))
-    # f.write("\n with seeds: " + str(storeSeeds))
     maxVal = storePayoff[k-1][i-1]
     for j in range(0,k):
         if storePayoff[j][i-1] > maxVal:
@@ -232,27 +222,34 @@ def greedyDP(G, i, k): #doesn't consider subtrees
 #             if j == 0 and numSeeds == 0: #first entry
 #                 negative_edges = {}
 #                 negative_weight = store_edges(negative_edges, nodes[j], G)
-#                 storeSeeds[numSeeds][j] = [nodes[j], negative_edges]
+#                 # [neg, pos, edges, seed set]
+#                 storeSeeds[numSeeds][j] = [negative_weight, G.nodes[nodes[j]]['weight'], negative_edges, nodes[j]]
 #                 storePayoff[numSeeds][j] = G.nodes[nodes[j]]['weight'] - negative_weight
 #                 #print("first entry,", storePayoff)
 
 #             elif numSeeds == 0: #if there is only one seed to consider, aka first row
 #                 last = storePayoff[numSeeds][j-1]
-#                 nodeWeight = computeNegPayoff(G, nodes[j])
+#                 negative_edges = {}
+#                 negative_weight = store_edges(negative_edges, nodes[j], G)
+#                 nodeWeight = G.nodes[nodes[j]]['weight'] - negative_weight
 #                 if nodeWeight > last:
 #                     storePayoff[numSeeds][j]=nodeWeight
-#                     storeSeeds[numSeeds][j] = [nodes[j]]
+#                     storeSeeds[numSeeds][j] = [negative_weight, G.nodes[nodes[j]]['weight'], negative_edges, nodes[j]]
 #                 else:
 #                     storePayoff[numSeeds][j]= last
 #                     table = storeSeeds[numSeeds][j-1]
-#                     table2 = table[:]
-#                     storeSeeds[numSeeds][j] = table2
+#                     copy = table[:]
+#                     storeSeeds[numSeeds][j] = copy
 #                 #print("num seeds 0",storePayoff)
 #             elif j == 0: #we only consider first node, so its simple
 #                 storePayoff[numSeeds][j] = storePayoff[numSeeds - 1][j]
 #                 storeSeeds[numSeeds][j] = storeSeeds[numSeeds - 1][j][:]
 #             else: #where DP comes in
-#                 last = storePayoff[numSeeds-1][j-1] #diagonal-up entry
+#                 last = storeSeeds[numSeeds-1][j-1] #diagonal-up entry
+#                 next_pos_weights = last[1]
+#                 next_neg_weights = last[2]
+#                 next_edges = last[3]
+#                 next_seeds = last[4]
 #                 nextGuess = computeNegPayoff(G, nodes[j]) + last
 #                 for lastNodes in storeSeeds[numSeeds-1][j-1]: #dont want to double count edges!
 #                     neighbors = nx.neighbors(G, lastNodes)
@@ -280,12 +277,16 @@ def greedyDP(G, i, k): #doesn't consider subtrees
 #     neighbors = nx.neighbors(G, node)
 #     negative_weights = 0
 #     for neighbor in neighbors:
-#         incedent_edge_weight = G.get_edge_data(node, neighbor)['weight']
-#         negative_weights += incedent_edge_wight
+#         edge = ""
 #         if node < neighbor:
-#             negative_edge_set.add(str(node) + "," + str(neighbor))
+#             edge = str(node) + "," + str(neighbor)
 #         else:
-#             negative_edge_set.add(str(neighbor) + "," + str(node))
+#             edge = str(neighbor) + "," + str(node)
+#         # if this edge has not been considered, add to negative calculations
+#         if not negative_edge_set.contains(edge):
+#             incedent_edge_weight = G.get_edge_data(node, neighbor)['weight']
+#             negative_weights += incedent_edge_wight
+#             negative_edge_set.add(edge)
 #     #print("node weight is:", nodeWeight)
 #     return negative_weights
 

@@ -62,6 +62,7 @@ import random
 import timeit
 from datetime import datetime
 import networkx as nx
+import networkx.algorithms.isomorphism as iso
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
 FILE_DIRECTORY_PREFIX = ""#"currently_in_use/"
@@ -96,7 +97,6 @@ Come up with an experiment design based on papers that we've read, then see how 
 Not really sure what this will be used for, but the math here makes the graphs comparable
 '''
 
-
 #main function, used for calling things
 def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1):
     num_nodes = int(num_nodes)
@@ -112,12 +112,12 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1):
     
     # for each graph, create cluster and bipartite graphs then save results, graphs, and plot them
     for O, graph_type in zip(original_graphs, original_types):
-        C, B = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
-        payoffs, runtimes = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1)
+        C, B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
+        payoffs, runtimes, opt_seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1)
         
         ID = view.generate_ID()
         # save to excel. Also provides unique ID for each row to a test can be ran again
-        view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes)
+        view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes, opt_seeds)
         
         # plot the different graphs
         view.plot_original(O, criticality)
@@ -127,19 +127,27 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1):
         # save the different graphs by ID
         view.save_original(O, criticality, k, graph_type, ID, do_remove_cycles, do_assumption_1)
         view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)
+        # make sure these are clear so original graphs do not accidentally interfere with each other
+        C.clear()
+        B.clear()
 
 def retest_old_file(original_graph_filename):
     # get all information used to make ID in excel sheet
+    if original_graph_filename[-4:] != ".txt":
+       original_graph_filename = original_graph_filename + ".txt"
     k, criticality, graph_type, ID, do_remove_cycles, do_assumption_1, O = cff.create_from_file(ORIGINAL_FILE_LOCATION + original_graph_filename)
     num_nodes = O.number_of_nodes()
     print("retesting " + original_graph_filename)
     
     # create cluster and bipartite based on information from file
-    C, B = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
-    payoffs, runtimes = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1)
+    C, B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
+    if loops_through_while != 1:
+        print("Previous tests of this graph may not have satisfied assumption 1")
+        sys.exit()
+    payoffs, runtimes, opt_seeds= run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1)
 
     # save to excel. Also provides unique ID for each row to a test can be ran again
-    view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes)
+    view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes, opt_seeds)
     
     # plot the different graphs
     view.plot_original(O, criticality)
@@ -251,7 +259,7 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
 
     # run bipartite linear program
     start = timeit.default_timer()
-    payoff_blp = general_case.solve_blp(B, k)
+    payoff_blp, blp_seeds = general_case.solve_blp(B, k)
     stop = timeit.default_timer()
     runtimes[4] = stop - start
     payoffs[4] = payoff_blp
@@ -270,7 +278,7 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
     runtimes[6] = stop - start
     payoffs[6] = payoff_forward_thinking
 
-    return payoffs, runtimes
+    return payoffs, runtimes, blp_seeds
 
 def string_to_boolean(input):
     if input == "false" or input == "False" or input == "0":
@@ -287,9 +295,52 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         retest_old_file(sys.argv[1])
     elif len(sys.argv) == 6:
+        # test_if_saved_graphs_same(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    else:
+        print('ERROR: Invalid input')
+        sys.exit()
     # plt.show()
 
+# test_if_saved_graphs_same("100","5","0.5","True","True")
 # test_new_file("100","5","0.5","True","True")
-retest_old_file("34.txt")
+# test_new_file("40","2","1","True","True")
+# retest_old_file("60.txt")
 # plt.show()
+
+# '''
+# Written for debugging purposes. Testing if generated graphs and their saved counterparts generate the same graph (isomorphic). Created
+# because tests of generation vs repeated tests were not matching in values.
+# '''
+# def test_if_saved_graphs_same(num_nodes, k, criticality, do_remove_cycles, do_assumption_1):
+#     num_nodes = int(num_nodes)
+#     k = int(k)
+#     criticality = float(criticality)
+#     do_remove_cycles = string_to_boolean(do_remove_cycles)
+#     do_assumption_1 = string_to_boolean(do_assumption_1)
+#     m = 2
+#     p = 0.2
+#     print("generating original graphs")
+#     # create three types of graphs (ba, er, ws) or roughly the same size
+#     original_graphs, original_types = generate_original_graphs(num_nodes, m, p)
+#     count = 0
+#     for O, graph_type in zip(original_graphs, original_types):
+#         ID = "test-" + str(count)
+#         print(ID)
+#         C, B = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
+#         view.save_original(O, criticality, k, graph_type, ID, do_remove_cycles, do_assumption_1)
+#         count += 1
+#         k, criticality, graph_type, new_ID, do_remove_cycles, do_assumption_1, saved_O = cff.create_from_file(ORIGINAL_FILE_LOCATION + ID + ".txt")
+#         saved_C, saved_B = graph_creation.generate_test_graphs(saved_O, criticality, do_remove_cycles, do_assumption_1)
+#         nm = iso.categorical_node_match("criticality",0)
+#         is_O_copy = nx.is_isomorphic(O,saved_O, node_match=nm)
+
+#         # # never got this bit to work
+#         # nm = iso.categorical_node_match("weight",0)
+#         # em = iso.numerical_multiedge_match(["weight", "rej_nodes"], [0, None])
+#         # is_C_copy = nx.is_isomorphic(C,saved_C, node_match=nm, edge_match=em)
+#         print(ID + " originial same? " + str(is_O_copy))
+#         print(ID + " cluster same? " + str(is_C_copy))
+#         C.clear()
+#         B.clear()
+#         saved_O.clear()

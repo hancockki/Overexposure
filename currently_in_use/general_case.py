@@ -52,11 +52,13 @@ def solve_blp(G,k):
     # solve lp
     status = lp.solve(PULP_CBC_CMD(msg=0)) # PULP_CBC_CMD(msg=0)
     print("Status:",status)
+    seeds = []
     for var in lp.variables():
         if value(var) == 1:
+            seeds.append(str(var))
             print(var,"=",value(var))
     print("OPT Bipartite=",value(lp.objective))
-    return value(lp.objective)
+    return value(lp.objective), seeds
 
 def intersection(lst1, lst2):
     lst3 = [value for value in lst1 if value in lst2]

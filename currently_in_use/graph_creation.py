@@ -52,26 +52,37 @@ DEBUG = False
 #input -- n, number of nodes in random graph
 #           c, criticality
 def generate_test_graphs(O, threshold, do_remove_cycles, do_assumption_1):
+    count = 0
     do_while = True
     while do_while:
+        count += 1
         C = create_cluster_graph(O, threshold)
-        if do_remove_cycles:
-            remove_cycles(C)
-            do_while = False
-        # end the while loop after one run if assumption 1 is not enforced
-        if do_assumption_1:
-            # if the cluster graph has more than two shared rejecting nodes, violating assumption 1
-            # generate a new assignment of node criticalites to original graph
-            # (this will lead to the formation of a new cluster graph)
-            if has_more_two_shared_rejects(C):
-                reset_original_graph_data(O)
+        # C will be false if there are less than two nodes in the cluster graph. In this case attempt a new assignment of variables
+        if C != False:
+            if do_remove_cycles:
+                remove_cycles(C)
+                do_while = False
+            # end the while loop after one run if assumption 1 is not enforced
+            if do_assumption_1:
+                do_while = True
+                # if the cluster graph has more than two shared rejecting nodes, violating assumption 1
+                # generate a new assignment of node criticalites to original graph
+                # (this will lead to the formation of a new cluster graph)
+                if has_more_two_shared_rejects(C):
+                    reset_original_graph_data(O)
+                else:
+                    do_while = False
             else:
                 do_while = False
         else:
-            do_while = False
+            reset_original_graph_data(O)
+        
+        if count > 200:
+            print("Parameters cannot feasibly satisfy parameters. Either too few clusters are being generated (small number of nodes or very low criticality) or criticality is too high and assumption 1 cannot be satisfied (if assumption 1 is applied)")
+            sys.exit()
     B = create_bipartite_from_cluster(C)
     rejectingNodeDict.clear()
-    return C, B
+    return C, B, count
 
 """
 From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled
@@ -82,6 +93,7 @@ def create_cluster_graph(O, threshold):
     nodeList = O.nodes()
     clusterCount = 0
     G_cluster = nx.Graph()
+    clearVisitedNodesAndDictionaries(O)
     # build the clusters
     for node_ID in nodeList:
         if (O.nodes[node_ID]['criticality'] < threshold) and (O.nodes[node_ID]['cluster'] == -1):
@@ -90,7 +102,7 @@ def create_cluster_graph(O, threshold):
             clusterCount += 1
     # cannot have a cluster graph with no edges... ? (wq:try to understand this later)
     if len(G_cluster.nodes()) < 2:
-        print("NOT GONNA WORK")
+        print("Less than 3 nodes in cluster graph")
         return False
     
     # decrement the cluster weight by the number of rejecting nodes that are exclusive to a cluster
@@ -243,10 +255,10 @@ def remove_cycles(C):
         pass
 
 
-# #clear dictionaries for next graph to test
-# def clearVisitedNodesAndDictionaries(O):
-#     setVisitedFalse(O)
-#     rejectingNodeDict.clear()
+#clear dictionaries for next graph to test
+def clearVisitedNodesAndDictionaries(O):
+    setVisitedFalse(O)
+    rejectingNodeDict.clear()
 
 
 # Set node attributes for the original graph, where each node is an individual and edges represent 
@@ -279,9 +291,11 @@ def create_bipartite_from_cluster(C):
         if not B.has_node(edge[0]):
             B.add_node(edge[0])
             B.nodes[edge[0]]['weight'] = C.nodes[edge[0]]['weight']
+            B.nodes[edge[0]]['bipartite'] = 0
         if not B.has_node(edge[1]):
             B.add_node(edge[1])
             B.nodes[edge[1]]['weight'] = C.nodes[edge[1]]['weight']
+            B.nodes[edge[1]]['bipartite'] = 0
         #not all edges have a rej_nodes attribute. If it does, create a node in the bipartite
         #for that rej node (if we havent already) and an edge from that rej node to the clusters
         #it is attached to.
@@ -291,6 +305,7 @@ def create_bipartite_from_cluster(C):
                 if not B.has_node(rej_label):
                     B.add_node(rej_label)
                     B.nodes[rej_label]['weight'] = rej_node
+                    B.nodes[rej_label]['bipartite'] = 1
                 if not B.has_edge(rej_label, edge[0]):
                     B.add_edge(rej_label, edge[0])
                 if not B.has_edge(rej_label, edge[1]):
