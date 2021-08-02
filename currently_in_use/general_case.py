@@ -12,7 +12,7 @@ Called from witihin driver to solve the linear program.
 Create variables for each cluster and rejecting node and then
 map the weights of each edge onto it.
 """
-def solve_blp(G,k):
+def solve_blp(G,k, debug):
     x_keys = []
     y_keys = []
     weight_dict = nx.get_node_attributes(G,'weight')
@@ -51,13 +51,14 @@ def solve_blp(G,k):
 
     # solve lp
     status = lp.solve(PULP_CBC_CMD(msg=0)) # PULP_CBC_CMD(msg=0)
-    print("Status:",status)
+    
+    if debug: print("Status:",status)
     seeds = []
     for var in lp.variables():
         if value(var) == 1:
             seeds.append(str(var))
-            print(var,"=",value(var))
-    print("OPT Bipartite=",value(lp.objective))
+            if debug: print(var,"=",value(var))
+    if debug: print("OPT Bipartite=",value(lp.objective))
     return value(lp.objective), seeds
 
 def intersection(lst1, lst2):
@@ -69,12 +70,12 @@ Greedy select the k highest nodes, deleting the edges between the
 cluster picked and rejecting nodes it is connected to after picking
 (to avoid double counting)
 """
-def greedy_selection(G, k):
+def greedy_selection(G, k, debug):
     max_weight = 0
     max_weight_node = None
     total_payoff = 0
-    print("Weight dictionary:\n", nx.get_node_attributes(G,'weight'))
-    print("Edges: \n", G.edges())
+    if debug: print("Weight dictionary:\n", nx.get_node_attributes(G,'weight'))
+    if debug: print("Edges: \n", G.edges())
     weight_dict = dict(nx.get_node_attributes(G,'weight'))
     edges = list(G.edges())
     rej_nodes = set()
@@ -109,14 +110,14 @@ def greedy_selection(G, k):
         max_weight = 0
         rej_nodes = set()
         max_weight_node = None
-    print("Payoff greedy bipartite: ", total_payoff)
+    if debug: print("Payoff greedy bipartite: ", total_payoff)
     return total_payoff
 
 """ 
 TODO: use deepcopy to copy G at the beginning of the method, and then
 delete edges within the copy of G rather than copying the list of edges
 """
-def forward_thinking_greedy(G,k):
+def forward_thinking_greedy(G, k, debug):
     max_weight_node = None
     payoff = 0
     max_weight = 0
@@ -125,11 +126,11 @@ def forward_thinking_greedy(G,k):
     #print(weight_dict)
     edges = list(G.edges())
     weight_dict_sorted = {}
-    print("Weight dictionary:\n", nx.get_node_attributes(G,'weight'))
+    if debug: print("Weight dictionary:\n", nx.get_node_attributes(G,'weight'))
     for elem in sorted(weight_dict.items(), reverse=True, key=lambda x: x[1]):
         weight_dict_sorted[elem[0]] = elem[1] 
-    print("Weight dictionary:\n", weight_dict_sorted)
-    print("Edges: \n", G.edges())
+    if debug: print("Weight dictionary:\n", weight_dict_sorted)
+    if debug: print("Edges: \n", G.edges())
     rej_nodes = []
     neg_nodes2 = set()
     for _ in range(k): #number of seeds = # iterations
@@ -156,7 +157,7 @@ def forward_thinking_greedy(G,k):
                     weight2 = value2
                     weight_total = weight + weight2 - len(neg_nodes1.union(neg_nodes2))
                 if weight_total > max_weight:
-                    print("Neg Nodes: ", neg_nodes1, neg_nodes2, " Total: ", weight_total)
+                    if debug: print("Neg Nodes: ", neg_nodes1, neg_nodes2, " Total: ", weight_total)
                     max_weight = weight_total
                     max_weight_node = node1
                     max_neg_nodes = neg_nodes1.copy()
@@ -165,7 +166,7 @@ def forward_thinking_greedy(G,k):
             neg_nodes1 = set() #reinitialize for first for loop
         if max_weight_node is not None: #we picked a node
             payoff += weight_dict_sorted[max_weight_node] - len(max_neg_nodes)
-            print("Adding ", weight_dict[max_weight_node], " to total payoff")
+            if debug: print("Adding ", weight_dict[max_weight_node], " to total payoff")
             j = 0
             """
             while j < len(edges):
@@ -189,9 +190,9 @@ def forward_thinking_greedy(G,k):
         #print("payoff: ", payoff, " Node: ", max_weight_node)
         weight_dict_sorted[max_weight_node] = -float("inf")
         max_weight = 0
-        print("Max weight node: ", max_weight_node)
+        if debug: print("Max weight node: ", max_weight_node)
         max_weight_node = None
-    print("Payoff forward thinking bipartite: ", payoff)
+    if debug: print("Payoff forward thinking bipartite: ", payoff)
     return payoff
 
 

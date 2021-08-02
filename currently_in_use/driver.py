@@ -98,22 +98,30 @@ Not really sure what this will be used for, but the math here makes the graphs c
 '''
 
 #main function, used for calling things
-def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, plot_graphs=False):
+def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, plot_graphs="False", do_debug="False"):
     num_nodes = int(num_nodes)
     k = int(k)
     criticality = float(criticality)
     do_remove_cycles = string_to_boolean(do_remove_cycles)
     do_assumption_1 = string_to_boolean(do_assumption_1)
+    plot_graphs = string_to_boolean(plot_graphs)
+    debug = string_to_boolean(do_debug)
+
+    # all algorithms that require trees ALSO need to satisfy assumption 1!!!!!
+    # cannot do remove cycles but not assumption 1 for any algorithms
+    if do_remove_cycles:
+        do_assumption_1 = 1
+
     m = 2
     p = 0.2
-    print("generating original graphs")
+    print("Generating original graphs")
     # create three types of graphs (ba, er, ws) or roughly the same size
     original_graphs, original_types = generate_original_graphs(num_nodes, m, p)
     
     # for each graph, create cluster and bipartite graphs then save results, graphs, and plot them
     for O, graph_type in zip(original_graphs, original_types):
         C, B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
-        payoffs, runtimes, opt_seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1)
+        payoffs, runtimes, opt_seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug)
         
         ID = view.generate_ID()
         # save to excel. Also provides unique ID for each row to a test can be ran again
@@ -140,22 +148,24 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
         C.clear()
         B.clear()
 
-def retest_old_file(original_graph_filename, plot_graphs=False):
+def retest_old_file(original_graph_filename, plot_graphs="False", do_debug="False"):
     # get all information used to make ID in excel sheet
     if original_graph_filename[-4:] != ".txt":
        original_graph_filename = original_graph_filename + ".txt"
     k, criticality, graph_type, ID, do_remove_cycles, do_assumption_1, O = cff.create_from_file(ORIGINAL_FILE_LOCATION + original_graph_filename)
     num_nodes = O.number_of_nodes()
-    print("retesting " + original_graph_filename)
+    print("Retesting " + original_graph_filename)
     if do_remove_cycles: print("Remove Cycs: " + str(do_remove_cycles))
     if do_assumption_1: print("Ass 1: " + str(do_assumption_1))
+    plot_graphs = string_to_boolean(plot_graphs)
+    debug = string_to_boolean(do_debug)
     
     # create cluster and bipartite based on information from file
     C, B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
     if loops_through_while != 1:
-        print("Criticalities were reset")
+        print("Criticalities were reset. Assumption 1 may not have been satisfied in this file")
         sys.exit()
-    payoffs, runtimes, opt_seeds= run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1)
+    payoffs, runtimes, opt_seeds= run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug)
 
     # save to excel. Also provides unique ID for each row to a test can be ran again
     view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes, opt_seeds)
@@ -170,7 +180,7 @@ def retest_old_file(original_graph_filename, plot_graphs=False):
         if len(B.nodes()) < 500:
             view.plot_bipartite(B, graph_type + " bipartite graph")
         plt.show()
-    print(C.edges.data())
+    if debug: print(C.edges.data())
 
     
     # # DONT SAVE FILE HERE BECAUSE DO NOT WANT TO OVERWRITE!
@@ -223,7 +233,7 @@ Uses booleans remove_cycles and assumption_1 to id class of algorithm
         Indecies are based off of excel speadsheet "Experimental_Results.xlsx" with each algorithm result
         contained in one index. If the algorithm was not run, contains '-'
 """
-def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
+def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug):
     # set default value of array (if an algorithm is not run)
     runtimes = []
     payoffs = []
@@ -233,15 +243,18 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
     
     # algorithms that work with trees
     if remove_cycles: print("Remove Cycs: " + str(remove_cycles))
-    if assumption_1: print("Ass 1: " + str(assumption_1))
+    if assumption_1: print("Ass 1: " + str(assumption_1) + "\n")
+    
+    print("Doing Tests")
     if remove_cycles:
+        print("\nDoing Tree Algorithms with Assumption 1 Satisfied")
         # compute payoff using knapsack approach
         start = timeit.default_timer()
-        payoff_knapsack, seedset = tree_case.greedyDP(C, C.number_of_nodes(), k)
+        payoff_knapsack, seedset = tree_case.knapsack(C, C.number_of_nodes(), k)
         stop = timeit.default_timer()
         runtimes[0] = stop - start
         payoffs[0] = payoff_knapsack
-        print("\nGreedy DP Payoff: ", payoff_knapsack)
+        print("Knacpsack (Greedy DP) Payoff: ", payoff_knapsack)
 
         # compute payoff for recursive DP
         start = timeit.default_timer()
@@ -258,43 +271,49 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1):
 
     # algorithm for assumption 1 (nodes cannot share more than two rejecting nodes, which means that there CAN be cycles)
     if assumption_1:
+        print("\nDoing Assumption 1 Algorithms")
         # compute payoff for most basic greedy algorithm
         start = timeit.default_timer()
-        payoff_greedy, greedy_seedset = assumption_one_case.kHighestClusters(C, k)
+        payoff_greedy, greedy_seedset = assumption_one_case.kHighestClusters(C, k, debug)
         stop = timeit.default_timer()
         runtimes[1] = stop - start
         payoffs[1] = payoff_greedy
-        print("Greedy Approach Seeds Chosen:", greedy_seedset, " with payoff: ", payoff_greedy)
+        print("K-Highest Seeds Chosen: ", greedy_seedset, " with payoff: ", payoff_greedy)
 
         # run linear program on cluster graph
         start = timeit.default_timer()
-        payoff_clp = assumption_one_case.lp_setup(C, k)
+        payoff_clp = assumption_one_case.lp_setup(C, k, debug)
         stop = timeit.default_timer()
         runtimes[3] = stop - start
         payoffs[3] = payoff_clp
+        print("Cluster LP payoff: ", payoff_clp)
 
     # all general test cases (no restrictions)
 
+    print("\nDoing General Algorithms")
     # run bipartite linear program
     start = timeit.default_timer()
-    payoff_blp, blp_seeds = general_case.solve_blp(B, k)
+    payoff_blp, blp_seeds = general_case.solve_blp(B, k, debug)
     stop = timeit.default_timer()
     runtimes[6] = stop - start
     payoffs[6] = payoff_blp
+    print("Bipartite LP payoff: ", payoff_blp)
 
     # run bipartite greedy algorithm
     start = timeit.default_timer()
-    payoff_greedy = general_case.greedy_selection(B, k)
+    payoff_greedy = general_case.greedy_selection(B, k, debug)
     stop = timeit.default_timer()
     runtimes[4] = stop - start
     payoffs[4] = payoff_greedy
+    print("Bipartite Greedy payoff: ", payoff_greedy)
 
     # run bipartite forward thinking algorithm
     start = timeit.default_timer()
-    payoff_forward_thinking = general_case.forward_thinking_greedy(B, k)
+    payoff_forward_thinking = general_case.forward_thinking_greedy(B, k, debug)
     stop = timeit.default_timer()
     runtimes[5] = stop - start
     payoffs[5] = payoff_forward_thinking
+    print("Forward-Thinking payoff: ", payoff_forward_thinking)
 
     return payoffs, runtimes, blp_seeds
 
@@ -309,16 +328,25 @@ def string_to_boolean(input):
 
 # Uncomment to run using command line!
 if __name__ == "__main__":
-    print(len(sys.argv))
+    # test old file, not plot
     if len(sys.argv) == 2:
         retest_old_file(sys.argv[1])
+    # test old file, specify do plot (if possible)
     elif len(sys.argv) == 3:
-        retest_old_file(sys.argv[1], string_to_boolean(sys.argv[2]))
+        retest_old_file(sys.argv[1], sys.argv[2])
+    # test olf file,  specify do plot (if possible), specifiy print debug info
+    elif len(sys.argv) == 4:
+        retest_old_file(sys.argv[1], sys.argv[2], sys.argv[3])
+    # create and test a new file, not plot
     elif len(sys.argv) == 6:
         # test_if_saved_graphs_same(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    # create and test a new file, specify do plot (if possible)
     elif len(sys.argv) == 7:
-        test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], string_to_boolean(sys.argv[6]))
+        test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+    # create and test a new file,  specify do plot (if possible), specifiy print debug info
+    elif len(sys.argv) == 8:
+        test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
     else:
         print('ERROR: Invalid input')
         sys.exit()

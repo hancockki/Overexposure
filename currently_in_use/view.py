@@ -42,7 +42,6 @@ def plot_cluster(C, name):
 
 """ Print bipartite graph using network x. Saved to file"""
 def plot_bipartite(bipartite, name):
-    print("printing bipartite graph")
     color_map = []
     # loop through nodes , creating color map and node lables
     for nodeID in bipartite.nodes():
@@ -59,7 +58,7 @@ def plot_bipartite(bipartite, name):
     nx.draw_networkx(bipartite, node_color = color_map, pos = pos, arrows=False, with_labels=False)
     
     node_labels = nx.get_node_attributes(bipartite,'weight')
-    print(node_labels)
+    # print(node_labels)
     # do (id, weight) pair for lable instead of just weight
     for key,val in node_labels.items():
         if not isinstance(key, str):
@@ -148,9 +147,9 @@ def generate_ID():
 
 """ Write results to an excel sheet stored in the currently_in_use/tests folder """
 def write_results_to_excel(preamble, payoffs, runtimes, opt_seeds):
-    print(preamble)
-    print(payoffs)
-    print(runtimes)
+    # print(preamble)
+    # print(payoffs)
+    # print(runtimes)
     wb = openpyxl.load_workbook(FILE_DIRECTORY_PREFIX + 'Experimental_Results.xlsx')
     print("WRITING RESULTS")
     sheets = wb.sheetnames

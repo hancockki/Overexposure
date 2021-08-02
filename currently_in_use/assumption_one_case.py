@@ -5,15 +5,15 @@ import networkx as nx
 Loop through all nodes in the graph, pick the k highest clusters to be our seed set.
 Most basic greedy approach to this problem.
 """
-def kHighestClusters(G, k):
+def kHighestClusters(G, k, debug=False):
     num_nodes = G.number_of_nodes()
     weights_list = []
     for i in range(num_nodes):
         weight = G.nodes[i]['weight']
         weights_list.append((weight, i))
-    print(weights_list)
+    if debug: print(weights_list)
     weights_list = sorted(weights_list, reverse=True)
-    print(weights_list)
+    if debug: print(weights_list)
     #print(weights_list)
     payoff = computePayoffGreedy(G, weights_list[0:k])
     return payoff, weights_list[0:k]
@@ -52,7 +52,7 @@ def computeNegPayoff(G, nodeNum):
     return nodeWeight
 
 
-def lp_setup(G, k):
+def lp_setup(G, k, debug):
     """
     Set up our LP based on the cluster data. We want each cluster and rejecting node to be a variable, 
     with the constraint that if you pick a cluster you must pick the rejecting nodes it is connected to.
@@ -68,12 +68,12 @@ def lp_setup(G, k):
     node_weights = nx.get_node_attributes(G, name='weight')
     edge_weights = nx.get_edge_attributes(G, 'weight')
 
-    print("Nodes: ", nodes)
+    if debug: print("Nodes: ", nodes)
 
     node_vars = LpVariable.dicts("Nodes", nodes, lowBound=0, upBound=1, cat=LpInteger)
     edge_vars = LpVariable.dicts("Edges", edges, lowBound=0, upBound=1, cat=LpInteger)
 
-    print(edge_vars, node_vars)
+    if debug: print(edge_vars, node_vars)
 
     #define our objective
     prob += lpSum(node_vars[i]*node_weights[i] for i in node_vars) - (lpSum(edge_weights[j]*edge_vars[j] for j in edge_vars))
@@ -89,11 +89,12 @@ def lp_setup(G, k):
 
     # Solve the LP
     status = prob.solve(PULP_CBC_CMD(msg=0))
-    print("Status:", status)
+    if debug: print("Status:", status)
 
     #Print solution
-    for var in prob.variables():
-        if value(var) == 1:
-            print(var, "=", value(var))
-    print("OPT LP=", value(prob.objective))
+    if debug:
+        for var in prob.variables():
+            if value(var) == 1:
+                print(var, "=", value(var))
+        print("OPT LP=", value(prob.objective))
     return value(prob.objective)

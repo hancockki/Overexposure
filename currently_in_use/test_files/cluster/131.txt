@@ -1,0 +1,10 @@
+c
+# crit: 0.5
+# removed_cycles: 1
+# satisfied_assumption_1: True
+# ID: 131
+# Nodes: 2
+# Edges: 1
+21
+2
+0 1 3 -40 -1 -70
