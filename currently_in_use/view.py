@@ -2,10 +2,17 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import openpyxl
 
-FILE_DIRECTORY_PREFIX = ""#"currently_in_use/"
-ORIGINAL_FILE_LOCATION = "test_files/original/"
-CLUSTER_FILE_LOCATION = "test_files/cluster/"
-BIPARTITE_FILE_LOCATION = "test_files/bipartite/"
+FILE_DIRECTORY_PREFIX = "currently_in_use/"#"currently_in_use/"
+# ORIGINAL_FILE_LOCATION = "test_files/original/"
+# CLUSTER_FILE_LOCATION = "test_files/cluster/"
+# BIPARTITE_FILE_LOCATION = "test_files/bipartite/"
+
+
+#FL stands for FILE_LOCATION
+FL_PREFIX = "test_files/"
+SATISFY_ASS_1_FL = "SA1/"
+NOT_SATISFY_ASS_1_FL = "NSA1/"
+SPECIFIC_NODE_VALS = [150, 500, 1000, 2000]
 
 def plot_original(O, c):
     color_map = []
@@ -79,7 +86,16 @@ The format used here is described in create_graph_from_file class
     c -> criticality (used for show purposes and creating cluster)
 '''
 def save_original(O, c, k, graph_type, ID, remove_cycles, assumption_1):
-    filename = FILE_DIRECTORY_PREFIX + ORIGINAL_FILE_LOCATION + ID + ".txt"
+    if O.number_of_nodes() in SPECIFIC_NODE_VALS:
+        if assumption_1:
+            filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + SATISFY_ASS_1_FL + graph_type + "/" + str(O.number_of_nodes()) + "/" + ID + ".txt"
+        else:
+            filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + NOT_SATISFY_ASS_1_FL + graph_type + "/" + str(O.number_of_nodes()) + "/" + ID + ".txt"
+    else:
+        if assumption_1:
+            filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + SATISFY_ASS_1_FL + graph_type + "/other/" + ID + ".txt"
+        else:
+            filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + SATISFY_ASS_1_FL + graph_type + "/other/" + ID + ".txt"
     # if remove_cycles == "false" or remove_cycles == "False" or remove_cycles == "0":
     #     remove_cycles = 0
     # else:
@@ -107,6 +123,7 @@ def save_original(O, c, k, graph_type, ID, remove_cycles, assumption_1):
             graph_info.write("\n" + str(node[1]))
         for item in data:
             graph_info.write("\n" + str(item[0]) + " " + str(item[1]))
+    return filename
 
 """ Store more specific info about each graph, to be used for testing if the 
 results output in the excel sheet are inaccurate / do not make sense """
@@ -137,12 +154,15 @@ def save_cluster(C, k, c, ID, remove_cycles, assumption_1):
 def generate_ID():
     filename = FILE_DIRECTORY_PREFIX + "ID_tracker.txt"
     file = open(filename, 'r')
+    # get current ID that is recorded in file
     if file.mode == 'r':
         ID = file.read()
 
+    # update file with next number
     with open(filename, 'w') as write_to_file:
         new_ID = int(ID) + 1
         write_to_file.write(str(new_ID))
+    # return number that was recorded in file before updated
     return ID
 
 """ Write results to an excel sheet stored in the currently_in_use/tests folder """

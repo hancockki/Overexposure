@@ -1,0 +1,10 @@
+Folder locations defined by:
+	Do they satisfy assumption 1 (share max two rejecting nodes)
+	Type of graph (Barabasi-Albert, Erdos-Renyi, Watts-Strogatz)
+	Number of Nodes (100, 500, 1000, 2000, other [aka misc.])
+
+NSA1 = Not Satisfy Assumption 1
+	Means: not satisfy max of two shared rejecting nodes
+
+SA1 = Satisfy Assumption 1
+	Means: satisfy max of two shared rejecting nodes

@@ -65,8 +65,9 @@ import networkx as nx
 import networkx.algorithms.isomorphism as iso
 
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
-FILE_DIRECTORY_PREFIX = ""#"currently_in_use/"
-ORIGINAL_FILE_LOCATION = "test_files/original/"
+FILE_DIRECTORY_PREFIX = "currently_in_use/"#"currently_in_use/"
+FILE_LOCATION_PREFIX = "test_files/"
+
 
 #TODO: run more rigorous tests
 #TODO: fix logging output to take max of root and no root
@@ -92,10 +93,6 @@ Come up with an experiment design based on papers that we've read, then see how 
     Present those things next week
     We want to save the graph and run tests based on that
 """
-
-'''
-Not really sure what this will be used for, but the math here makes the graphs comparable
-'''
 
 #main function, used for calling things
 def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, plot_graphs="False", do_debug="False"):
@@ -124,8 +121,14 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
         payoffs, runtimes, opt_seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug)
         
         ID = view.generate_ID()
+
+        # save the different graphs by ID
+        location = view.save_original(O, criticality, k, graph_type, ID, do_remove_cycles, do_assumption_1)
+        # view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)
+        # make sure these are clear so original graphs do not accidentally interfere with each other
+
         # save to excel. Also provides unique ID for each row to a test can be ran again
-        view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes, opt_seeds)
+        view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, opt_seeds)
         
         # plot the different graphs
         if plot_graphs:
@@ -137,10 +140,6 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
             if len(B.nodes()) < 500:
                 view.plot_bipartite(B, graph_type + " bipartite graph")
        
-        # save the different graphs by ID
-        view.save_original(O, criticality, k, graph_type, ID, do_remove_cycles, do_assumption_1)
-        view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)
-        # make sure these are clear so original graphs do not accidentally interfere with each other
 
         if plot_graphs:
             plt.show()
@@ -152,7 +151,8 @@ def retest_old_file(original_graph_filename, plot_graphs="False", do_debug="Fals
     # get all information used to make ID in excel sheet
     if original_graph_filename[-4:] != ".txt":
        original_graph_filename = original_graph_filename + ".txt"
-    k, criticality, graph_type, ID, do_remove_cycles, do_assumption_1, O = cff.create_from_file(ORIGINAL_FILE_LOCATION + original_graph_filename)
+    location = FILE_LOCATION_PREFIX + original_graph_filename
+    k, criticality, graph_type, ID, do_remove_cycles, do_assumption_1, O = cff.create_from_file(location)
     num_nodes = O.number_of_nodes()
     print("Retesting " + original_graph_filename)
     if do_remove_cycles: print("Remove Cycs: " + str(do_remove_cycles))
@@ -168,7 +168,7 @@ def retest_old_file(original_graph_filename, plot_graphs="False", do_debug="Fals
     payoffs, runtimes, opt_seeds= run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug)
 
     # save to excel. Also provides unique ID for each row to a test can be ran again
-    view.write_results_to_excel([num_nodes, k, criticality, graph_type, int(ID)], payoffs, runtimes, opt_seeds)
+    view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, opt_seeds)
     
     # plot the different graphs
     if plot_graphs:
@@ -213,7 +213,7 @@ def generate_original_graphs(num_nodes, num_links, prob_rewrite_edge):
             O.nodes[node_ID]["visited"] = False
             O.nodes[node_ID]['criticality'] = random.uniform(0, 1)
             O.nodes[node_ID]["cluster"] = -1
-    return [BA, ER, WS], ["ba", "er", "ws"]
+    return [BA, ER, WS], ["BA", "ER", "WS"]
 
 """
 Run algorithms on cluster graph, and its corresponding bipartite graph, based on class of algorithm.
@@ -326,35 +326,35 @@ def string_to_boolean(input):
         print('ERROR: Invalid boolean input (try using "True", "true", or "1" [same for false variations])')
         sys.exit()
 
-# Uncomment to run using command line!
-if __name__ == "__main__":
-    # test old file, not plot
-    if len(sys.argv) == 2:
-        retest_old_file(sys.argv[1])
-    # test old file, specify do plot (if possible)
-    elif len(sys.argv) == 3:
-        retest_old_file(sys.argv[1], sys.argv[2])
-    # test olf file,  specify do plot (if possible), specifiy print debug info
-    elif len(sys.argv) == 4:
-        retest_old_file(sys.argv[1], sys.argv[2], sys.argv[3])
-    # create and test a new file, not plot
-    elif len(sys.argv) == 6:
-        # test_if_saved_graphs_same(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-        test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-    # create and test a new file, specify do plot (if possible)
-    elif len(sys.argv) == 7:
-        test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
-    # create and test a new file,  specify do plot (if possible), specifiy print debug info
-    elif len(sys.argv) == 8:
-        test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-    else:
-        print('ERROR: Invalid input')
-        sys.exit()
+# # Uncomment to run using command line!
+# if __name__ == "__main__":
+#     # test old file, not plot
+#     if len(sys.argv) == 2:
+#         retest_old_file(sys.argv[1])
+#     # test old file, specify do plot (if possible)
+#     elif len(sys.argv) == 3:
+#         retest_old_file(sys.argv[1], sys.argv[2])
+#     # test olf file,  specify do plot (if possible), specifiy print debug info
+#     elif len(sys.argv) == 4:
+#         retest_old_file(sys.argv[1], sys.argv[2], sys.argv[3])
+#     # create and test a new file, not plot
+#     elif len(sys.argv) == 6:
+#         # test_if_saved_graphs_same(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+#         test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+#     # create and test a new file, specify do plot (if possible)
+#     elif len(sys.argv) == 7:
+#         test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+#     # create and test a new file,  specify do plot (if possible), specifiy print debug info
+#     elif len(sys.argv) == 8:
+#         test_new_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+#     else:
+#         print('ERROR: Invalid input')
+#         sys.exit()
 
 # test_if_saved_graphs_same("100","5","0.5","True","True")
 # test_new_file("100","5","0.5","True","True")
 # test_new_file("40","2","1","True","True")
-# retest_old_file("80.txt")
+retest_old_file("SA1/ER/150/2", "True")
 # plt.show()
 
 # '''
@@ -393,3 +393,16 @@ if __name__ == "__main__":
 #         C.clear()
 #         B.clear()
 #         saved_O.clear()
+
+# def test_counter_example():
+#     location = "counter_ex.txt"
+#     C = cff.create_from_file(location)
+#     plot_graphs = True
+#     debug = False
+#     k = 6
+    
+#     view.plot_cluster(C, "counter_ex" + " cluster graph")
+#     plt.show()
+
+#     payoff_knapsack, seedset = tree_case.knapsack(C, C.number_of_nodes(), k)
+# test_counter_example()

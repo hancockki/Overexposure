@@ -48,6 +48,8 @@ global DEBUG
 rejectingNodeDict = {}
 DEBUG = False
 
+MAX_ATTEMPTS_SASISFY_ASS_1 = 1000
+
 #method to test whether our input graph is correctly forming clusters, then runs dynamic programming
 #input -- n, number of nodes in random graph
 #           c, criticality
@@ -80,7 +82,7 @@ def generate_test_graphs(O, threshold, do_remove_cycles, do_assumption_1):
         else:
             reset_original_graph_data(O)
         
-        if count > 200:
+        if count > MAX_ATTEMPTS_SASISFY_ASS_1:
             print("Parameters cannot feasibly satisfy parameters. Either too few clusters are being generated (small number of nodes or very low criticality) or criticality is too high and assumption 1 cannot be satisfied (if assumption 1 is applied)")
             sys.exit()
     B = create_bipartite_from_cluster(C)
