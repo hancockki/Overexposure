@@ -309,7 +309,8 @@ def create_bipartite_from_cluster(C):
                 rej_label = "r" + str(rej_node) # create a different lable from the cluster nodes so that they can never be confused for eachother
                 if not B.has_node(rej_label):
                     B.add_node(rej_label)
-                    B.nodes[rej_label]['weight'] = rej_node
+                    # don't need weights here!
+                    # B.nodes[rej_label]['weight'] = rej_node
                     B.nodes[rej_label]['bipartite'] = 1
                 if not B.has_edge(rej_label, edge[0]):
                     B.add_edge(rej_label, edge[0])

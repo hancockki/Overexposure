@@ -15,17 +15,25 @@ map the weights of each edge onto it.
 def solve_blp(G,k, debug):
     x_keys = []
     y_keys = []
+    # weight dict for clusters
     weight_dict = nx.get_node_attributes(G,'weight')
-    # print("Weight dictionary: ", weight_dict)
-    # print("\nNodes in bipartite \n", G.nodes(), "\nOut edges: \n", G.out_edges())
-    for edge in G.edges():
-        if edge[0] not in y_keys:
-            y_keys.append(edge[0])
-        if edge[1] not in x_keys:
-            x_keys.append(edge[1])
+    
+    # # wq: this adds more x_keys than nessesary!
+    # for edge in G.edges():
+    #     if edge[0] not in y_keys:
+    #         y_keys.append(edge[0])
+    #     if edge[1] not in x_keys:
+    #         x_keys.append(edge[1])
+    # for node in G.nodes():
+    #     if node not in x_keys:
+    #         x_keys.append(node)
+
+    # cluster nodes x keys, reject y keys
     for node in G.nodes():
-        if node not in x_keys:
+        if G.nodes[node]['bipartite'] == 0:
             x_keys.append(node)
+        else:
+            y_keys.append(node)
 
     #add x and y variables
     x = LpVariable.dicts("x", x_keys, lowBound=0, cat="Integer")
