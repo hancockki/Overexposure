@@ -64,14 +64,12 @@ def plot_bipartite(bipartite, name):
     plt.figure(name+ "-bipartite")
     nx.draw_networkx(bipartite, node_color = color_map, pos = pos, arrows=False, with_labels=False)
     
-    node_labels = nx.get_node_attributes(bipartite,'weight')
-    # print(node_labels)
-    # do (id, weight) pair for lable instead of just weight
-    for key,val in node_labels.items():
-        if not isinstance(key, str):
-            node_labels[key] = (key,val)
+    node_labels = dict()
+    for nodeID in bipartite.nodes():
+        if isinstance(nodeID, str):
+            node_labels[nodeID] = nodeID
         else:
-            node_labels[key] = key
+            node_labels[nodeID] = bipartite.nodes[nodeID]['weight']
     nx.draw_networkx_labels(bipartite, pos=pos, labels=node_labels)    
     # # uncomment to save figure
     # plt.savefig("saved-graphs/"+ name + "-bipartite.png")

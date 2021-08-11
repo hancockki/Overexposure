@@ -182,6 +182,10 @@ def retest_old_file(original_graph_filename, plot_graphs="False", do_debug="Fals
         plt.show()
     if debug: print(C.edges.data())
 
+    C.clear()
+    B.clear()
+    O.clear()
+
     
     # # DONT SAVE FILE HERE BECAUSE DO NOT WANT TO OVERWRITE!
     # # wq: should a method be made to compare two graphs and see if they are (relativley) the same?
@@ -352,9 +356,9 @@ def string_to_boolean(input):
 #         sys.exit()
 
 # test_if_saved_graphs_same("100","5","0.5","True","True")
-# test_new_file("100","5","0.5","True","True")
+# test_new_file("100","5","0.5","False","False")
 # test_new_file("40","2","1","True","True")
-retest_old_file("SA1/ER/150/2", "True")
+retest_old_file("SA1/WS/other/316", "True")
 # plt.show()
 
 # '''

@@ -24,6 +24,8 @@ If we want to ensure these two properties hold, set the global boolean DEBUG to 
 The script driver.py will keep calling testOriginalToCluster until it can create a graph that satisfies these properties.
 """
 
+import view
+
 import networkx as nx
 from networkx.algorithms import tree
 from networkx.algorithms import approximation as approx
@@ -86,6 +88,8 @@ def generate_test_graphs(O, threshold, do_remove_cycles, do_assumption_1):
             print("Parameters cannot feasibly satisfy parameters. Either too few clusters are being generated (small number of nodes or very low criticality) or criticality is too high and assumption 1 cannot be satisfied (if assumption 1 is applied)")
             sys.exit()
     B = create_bipartite_from_cluster(C)
+    # statisfy_assumption_one(B)
+    
     rejectingNodeDict.clear()
     return C, B, count
 
@@ -206,6 +210,8 @@ def make_cluster_edge(G_cluster, G_orig):
                 # as the ID of the rejecting nodes
                 if len(shared_rej_nodes) > 0:
                     G_cluster.add_edge(clusterNum, clusterNum2, weight=weight, rej_nodes=intersection)
+    
+    # add edges with no weight if cluster graph not connected
     components = nx.algorithms.components.connected_components(G_cluster)
     if DEBUG: print("Connected components: ", components)
     prev = -1
@@ -216,8 +222,146 @@ def make_cluster_edge(G_cluster, G_orig):
             if DEBUG: print("list is", list(comp))
             continue
         else:
+            # connect disconnected componeents
             G_cluster.add_edge(prev[0], list(comp)[0], weight=0) #add arbitrary weight
 
+
+
+
+
+"""
+This code does work (mostly), however since creation of clusters requires BFS and reject nodes cannot be marked visited
+(bc rejects can belong to multiple clusters) doing cluster -> bipartite -> (maybe sat assum 1, bipartite -> C) could be smarter
+workflow
+"""
+def create_bipartite_from_original(O, threshold):
+    nodeList = O.nodes()
+    clusterCount = 0
+    B = nx.DiGraph()
+    clearVisitedNodesAndDictionaries(O)
+    # build the clusters and add to bipartite graph
+    for node_ID in nodeList:
+        if (O.nodes[node_ID]['criticality'] < threshold) and (O.nodes[node_ID]['cluster'] == -1):
+            add_cluster_and_corresponding_rejects(O, node_ID, clusterCount, threshold, B)
+            clusterCount += 1
+    # cannot have a cluster graph with no edges... ? (wq:try to understand this later)
+    if len(B.nodes()) < 2:
+        print("Less than 3 nodes in cluster graph")
+        return False
+    # consume reject into cluster (decrement weight by one) if a reject is exclusive to one cluster
+    nodes_to_remove = set()
+    for node in B.nodes():
+        if B.nodes[node]['bipartite'] == 1 and B.degree[node] == 1:
+            # get the cluster the reject is connected to
+            connected_cluster = B.neighbors(node)
+            # neighbors returns iterable, so iterate over the ONE variable in iterable
+            for ID in connected_cluster:
+                B.nodes[ID]['weight'] = B.nodes[ID]['weight'] - 1
+                nodes_to_remove.add(node)
+    B.remove_nodes_from(nodes_to_remove)
+    return B
+
+
+"""
+Helper for original to bipartite. Similar to lable clusters
+"""
+def add_cluster_and_corresponding_rejects(O, source, clusterNum, appeal, B):
+    B.add_node(clusterNum)
+    B.nodes[clusterNum]['weight'] = 'not assigned'
+    B.nodes[clusterNum]['bipartite'] = 0
+
+    queue = []
+    O.nodes[source]['cluster'] = clusterNum
+    queue.append(source)
+    accepting_in_cluster = 1 # count yourself, you matter!
+    
+    # BFS!
+    while queue:
+        start = queue.pop(0)
+        for neighbor in nx.neighbors(O, start):
+            if O.nodes[neighbor]['visited'] == False: # check if we've added a node to a cluster yet
+                if O.nodes[neighbor]['criticality'] < appeal:
+                    # assign node to a cluster, increment weight count and add to queue for BFS
+                    queue.append(neighbor)
+                    O.nodes[neighbor]['cluster'] = clusterNum
+                    accepting_in_cluster += 1
+                    O.nodes[neighbor]['visited'] = True # note that we only mark visited if accepting node, because we want to be able to visit rejects again!
+                else:
+                    # connect reject w/ edge to cluster
+                    rej_label = "r-" + str(neighbor)
+                    if not B.has_node(rej_label):
+                        B.add_node(rej_label)
+                        B.nodes[rej_label]['bipartite'] = 1
+                    B.add_edge(rej_label, clusterNum)
+    # assign weight as number of accepting in the cluster
+    B.nodes[clusterNum]['weight'] = accepting_in_cluster
+
+'''
+Create a cluster graph from bipartite graph, useful when making graph satisfy assumption 1
+'''
+def create_cluster_from_bipartite(B):
+    C = nx.Graph()
+    rejects = []
+    for node in G.nodes():
+        # add clusters from bipartite graph directly into cluster graph
+        if G.nodes[node]['bipartite'] == 0:
+            C.add_node(node)
+            C.nodes[node]['weight'] = B.nodes[node]['weight']
+        # record list of reject nodes in bipartite graph
+        else:
+            rejects.append(node)
+
+    for reject in rejects:
+        # add edges between clusters based on shared rejecting nodes in bipartite graph
+        for neighbor_1 in B.neighbors(reject):
+            for neighbor_2 in B.neighbors(reject):
+                # if neighbor_1 larger than neighbor_2, this edge combination has been considered
+                if neighbor_1 >= neighbor_2:
+                    continue
+                # if the edge between these two does not exist, create it
+                elif not C.has_edge(neighbor_1, neighbor_2):
+                    C.add_edge(neighbor_1, neighbor_2, weight=1, rej_nodes=[reject])
+                # the edge between these nodes does exist, therefore update weight of edge and shared reject nodes
+                else:
+                    C[neighbor_1][neighbor_2]['weight'] = C[neighbor_1][neighbor_2]['weight'] + 1
+                    C[neighbor_1][neighbor_2]['rej_nodes'] = C[neighbor_1][neighbor_2]['rej_nodes'].append(reject)
+
+    # add edges with no weight if cluster graph not connected
+    connected_sections = nx.algorithms.components.connected_components(C)
+    prev = -1
+    for component in connected_sections:
+        if prev == -1:
+            prev = list(component)
+            continue
+        else:
+            # connect disconnected componeents
+            C.add_edge(prev[0], list(component)[0], weight=0) #add arbitrary weight
+    return C
+
+'''
+Remove edges in bipartite graph until no cluster has more than two shared rejecting nodes
+
+@params
+B -> Bipartite graph
+'''
+def statisfy_assumption_one(B):
+    for node in B.nodes():
+        if B.nodes[node]['bipartite'] == 1:
+            number_clusters_sharing_reject = B.degree[node]
+            if number_clusters_sharing_reject > 2:
+                shared_clusters = [(node, cluster) for cluster in B.neighbors(node)]
+                # remove all edges from reject but two
+                B.remove_edges_from(shared_clusters[:-2])
+
+'''
+Check if a cluster graph has more than two shared rejecting nodes.
+This is assumption 1, and is required for all tree algorithms and algorithms that requre assumption 1
+
+@params
+C -> Cluster graph
+@returns
+Boolean -> True if has more than two, False otherwise
+'''
 def has_more_two_shared_rejects(C):
     sharedRejectingNodes = {}
     for clusterNum, rejNodes in rejectingNodeDict.items():
@@ -233,6 +377,12 @@ def has_more_two_shared_rejects(C):
         if DEBUG: print("\nMap rejecting nodes to clusters:\n", sharedRejectingNodes)
     return False
 
+'''
+Remove cycles from a cluster graph via max spanning tree
+
+@params
+C -> Cluster graph
+'''
 def remove_cycles(C):
     if DEBUG: print("IN REMOVE CYCLES")
     try:

@@ -14,4 +14,10 @@ def main():
             print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
             driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
 
-main()
+def test_BA_150():
+    for i in range(302):
+        if i % 3 == 1:
+            filename = "SA1/BA/150/" + str(i)
+            driver.retest_old_file(filename)
+
+test_BA_150()
