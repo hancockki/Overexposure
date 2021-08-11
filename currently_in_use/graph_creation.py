@@ -50,7 +50,7 @@ global DEBUG
 rejectingNodeDict = {}
 DEBUG = False
 
-MAX_ATTEMPTS_SASISFY_ASS_1 = 1000
+MAX_ATTEMPTS_SASISFY_ASS_1 = 100
 
 #method to test whether our input graph is correctly forming clusters, then runs dynamic programming
 #input -- n, number of nodes in random graph
@@ -62,34 +62,33 @@ def generate_test_graphs(O, threshold, do_remove_cycles, do_assumption_1):
         count += 1
         C = create_cluster_graph(O, threshold)
         # C will be false if there are less than two nodes in the cluster graph. In this case attempt a new assignment of variables
-        if C != False:
-            if do_remove_cycles:
-                remove_cycles(C)
-                # if has_more_two_shared_rejects(C):
-                #     print("REMOVING CYCLES DOES NOT GUARANTEE ASS 1 HOLDS")
-                #     sys.exit()
-                do_while = False
-            # end the while loop after one run if assumption 1 is not enforced
-            if do_assumption_1:
-                do_while = True
-                # if the cluster graph has more than two shared rejecting nodes, violating assumption 1
-                # generate a new assignment of node criticalites to original graph
-                # (this will lead to the formation of a new cluster graph)
-                if has_more_two_shared_rejects(C):
-                    reset_original_graph_data(O)
-                else:
-                    do_while = False
-            else:
-                do_while = False
-        else:
+        if C == False:
             reset_original_graph_data(O)
-        
+        else:
+            do_while = False
         if count > MAX_ATTEMPTS_SASISFY_ASS_1:
-            print("Parameters cannot feasibly satisfy parameters. Either too few clusters are being generated (small number of nodes or very low criticality) or criticality is too high and assumption 1 cannot be satisfied (if assumption 1 is applied)")
+            print("Parameters cannot feasibly satisfy parameters. Too few clusters are being generated (small number of nodes or very low criticality)")
             sys.exit()
-    B = create_bipartite_from_cluster(C)
-    # statisfy_assumption_one(B)
+    B = None
+    # remove cycles and satisfy assumption 1 (never need to node sat ass 1 if removing cycles)
+    if do_remove_cycles:
+        remove_cycles(C)
+        B = create_bipartite_from_cluster(C)
+        statisfy_assumption_one(B)
+        C_from_B = create_cluster_from_bipartite(B)
+        rejectingNodeDict.clear()
+        return C_from_B, B, count
     
+    # satisfy assumption 1
+    if do_assumption_1:
+        B = create_bipartite_from_cluster(C)
+        statisfy_assumption_one(B)
+        C_from_B = create_cluster_from_bipartite(B)
+        rejectingNodeDict.clear()
+        return C_from_B, B, count
+    # create cluster graph with no modifications
+    else:
+        B = create_bipartite_from_cluster(C)
     rejectingNodeDict.clear()
     return C, B, count
 
@@ -302,9 +301,9 @@ Create a cluster graph from bipartite graph, useful when making graph satisfy as
 def create_cluster_from_bipartite(B):
     C = nx.Graph()
     rejects = []
-    for node in G.nodes():
+    for node in B.nodes():
         # add clusters from bipartite graph directly into cluster graph
-        if G.nodes[node]['bipartite'] == 0:
+        if B.nodes[node]['bipartite'] == 0:
             C.add_node(node)
             C.nodes[node]['weight'] = B.nodes[node]['weight']
         # record list of reject nodes in bipartite graph
@@ -320,11 +319,13 @@ def create_cluster_from_bipartite(B):
                     continue
                 # if the edge between these two does not exist, create it
                 elif not C.has_edge(neighbor_1, neighbor_2):
-                    C.add_edge(neighbor_1, neighbor_2, weight=1, rej_nodes=[reject])
+                    C.add_edge(neighbor_1, neighbor_2, weight=1, rej_nodes=[reject[1:]])
                 # the edge between these nodes does exist, therefore update weight of edge and shared reject nodes
                 else:
                     C[neighbor_1][neighbor_2]['weight'] = C[neighbor_1][neighbor_2]['weight'] + 1
-                    C[neighbor_1][neighbor_2]['rej_nodes'] = C[neighbor_1][neighbor_2]['rej_nodes'].append(reject)
+                    rejects = C[neighbor_1][neighbor_2]['rej_nodes']
+                    rejects.append(reject[1:])
+                    C[neighbor_1][neighbor_2]['rej_nodes'] = rejects
 
     # add edges with no weight if cluster graph not connected
     connected_sections = nx.algorithms.components.connected_components(C)

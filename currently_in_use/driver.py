@@ -127,9 +127,14 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
         # view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)
         # make sure these are clear so original graphs do not accidentally interfere with each other
 
-        # save to excel. Also provides unique ID for each row to a test can be ran again
-        view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, opt_seeds)
+        max_degree = "-"
+        max_height = "-"
+        if do_remove_cycles and O.number_of_nodes() < 1000:
+            max_degree, max_height = get_max_degree_and_height(C)
         
+        # save to excel. Also provides unique ID for each row to a test can be ran again
+        view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, opt_seeds)
+            
         # plot the different graphs
         if plot_graphs:
             # get error if attempt to plot more than 500 nodes
@@ -167,8 +172,13 @@ def retest_old_file(original_graph_filename, plot_graphs="False", do_debug="Fals
         sys.exit()
     payoffs, runtimes, opt_seeds= run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug)
 
+    max_degree = "-"
+    max_height = "-"
+    if do_remove_cycles and O.number_of_nodes() < 1000:
+        max_degree, max_height = get_max_degree_and_height(C)
+        
     # save to excel. Also provides unique ID for each row to a test can be ran again
-    view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, opt_seeds)
+    view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, opt_seeds)
     
     # plot the different graphs
     if plot_graphs:
@@ -190,7 +200,7 @@ def retest_old_file(original_graph_filename, plot_graphs="False", do_debug="Fals
     # # DONT SAVE FILE HERE BECAUSE DO NOT WANT TO OVERWRITE!
     # # wq: should a method be made to compare two graphs and see if they are (relativley) the same?
     # view.save_original(O, criticality, k, ID, do_remove_cycles, do_assumption_1)
-    # view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)        
+    # view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)     
 
 '''
 Generate three types of original graphs (Barabasi-Albert, Erdos-Renyi, and Watts-Strogatz) of the same size
@@ -256,6 +266,10 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug):
         start = timeit.default_timer()
         payoff_knapsack, seedset = tree_case.knapsack(C, C.number_of_nodes(), k)
         stop = timeit.default_timer()
+        # if payoff is less than 0, best to not pick any seeds
+        if payoff_knapsack < 0:
+            payoff_knapsack = 0
+            seedset = []
         runtimes[0] = stop - start
         payoffs[0] = payoff_knapsack
         print("Knacpsack (Greedy DP) Payoff: ", payoff_knapsack)
@@ -280,6 +294,10 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug):
         start = timeit.default_timer()
         payoff_greedy, greedy_seedset = assumption_one_case.kHighestClusters(C, k, debug)
         stop = timeit.default_timer()
+        # if payoff is less than 0, best to not pick any seeds
+        if payoff_greedy < 0:
+            payoff_greedy = 0
+            greedy_seedset = []
         runtimes[1] = stop - start
         payoffs[1] = payoff_greedy
         print("K-Highest Seeds Chosen: ", greedy_seedset, " with payoff: ", payoff_greedy)
@@ -330,6 +348,24 @@ def string_to_boolean(input):
         print('ERROR: Invalid boolean input (try using "True", "true", or "1" [same for false variations])')
         sys.exit()
 
+def get_max_degree_and_height(G):
+    # get the max degree
+    # node with max degree is most likley root
+    max_degree = -1
+    root = None
+    for n, d in G.degree():
+        if d > max_degree:
+            max_degree = d
+            root = n
+
+    shortest_path_from_root_to_all_nodes = nx.shortest_path(G, source=root)
+    max_height = -1
+    # get largest of the shortest paths (this will necissarily be the path from root to leaf)
+    for node, path in shortest_path_from_root_to_all_nodes.items():
+        if len(path) > max_height:
+            max_height = len(path)
+    return max_degree, max_height - 1 # max height subtracts 1 bc height of root is 1
+
 # # Uncomment to run using command line!
 # if __name__ == "__main__":
 #     # test old file, not plot
@@ -358,7 +394,7 @@ def string_to_boolean(input):
 # test_if_saved_graphs_same("100","5","0.5","True","True")
 # test_new_file("100","5","0.5","False","False")
 # test_new_file("40","2","1","True","True")
-retest_old_file("SA1/WS/other/316", "True")
+retest_old_file("17", "True")
 # plt.show()
 
 # '''

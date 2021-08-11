@@ -1,13 +1,13 @@
 import driver
 
 def main():
-    node_sizes = ["500", "1000", "2000"] # ["150", "500", "1000", "2000"]
-    possible_k = ["10","20","50"] # ["5","10","20","50"]
-    possible_criticalities = ["0.7", "0.6", "0.6"] # ["0.5", "0.5", "0.6", "0.6"]
+    node_sizes = ["150", "500", "1000", "2000"] # ["150", "500", "1000", "2000"]
+    possible_k = ["5","10","20","50"] # ["5","10","20","50"]
+    possible_criticalities = ["0.5", "0.5", "0.5", "0.5"]
     do_remove_cycles = "True"
     do_assumption_1 = "True"
 
-    runs = 100
+    runs = 50
 
     for num_nodes, k, criticality in zip(node_sizes, possible_k, possible_criticalities):
         for i in range(runs):
@@ -17,7 +17,7 @@ def main():
 def test_BA_150():
     for i in range(302):
         if i % 3 == 1:
-            filename = "SA1/BA/150/" + str(i)
+            filename = "BA/150/" + str(i)
             driver.retest_old_file(filename)
 
-test_BA_150()
+main()

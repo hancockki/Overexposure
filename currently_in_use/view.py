@@ -10,8 +10,6 @@ FILE_DIRECTORY_PREFIX = "currently_in_use/"#"currently_in_use/"
 
 #FL stands for FILE_LOCATION
 FL_PREFIX = "test_files/"
-SATISFY_ASS_1_FL = "SA1/"
-NOT_SATISFY_ASS_1_FL = "NSA1/"
 SPECIFIC_NODE_VALS = [150, 500, 1000, 2000]
 
 def plot_original(O, c):
@@ -85,15 +83,9 @@ The format used here is described in create_graph_from_file class
 '''
 def save_original(O, c, k, graph_type, ID, remove_cycles, assumption_1):
     if O.number_of_nodes() in SPECIFIC_NODE_VALS:
-        if assumption_1:
-            filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + SATISFY_ASS_1_FL + graph_type + "/" + str(O.number_of_nodes()) + "/" + ID + ".txt"
-        else:
-            filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + NOT_SATISFY_ASS_1_FL + graph_type + "/" + str(O.number_of_nodes()) + "/" + ID + ".txt"
+        filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + graph_type + "/" + str(O.number_of_nodes()) + "/" + ID + ".txt"
     else:
-        if assumption_1:
-            filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + SATISFY_ASS_1_FL + graph_type + "/other/" + ID + ".txt"
-        else:
-            filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + SATISFY_ASS_1_FL + graph_type + "/other/" + ID + ".txt"
+        filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + graph_type + "/other/" + ID + ".txt"
     # if remove_cycles == "false" or remove_cycles == "False" or remove_cycles == "0":
     #     remove_cycles = 0
     # else:
@@ -164,7 +156,7 @@ def generate_ID():
     return ID
 
 """ Write results to an excel sheet stored in the currently_in_use/tests folder """
-def write_results_to_excel(preamble, payoffs, runtimes, opt_seeds):
+def write_results_to_excel(preamble, payoffs, runtimes, max_degree, max_height, opt_seeds):
     # print(preamble)
     # print(payoffs)
     # print(runtimes)
@@ -173,6 +165,6 @@ def write_results_to_excel(preamble, payoffs, runtimes, opt_seeds):
     sheets = wb.sheetnames
     payoff_sheet = wb[sheets[0]]
     runtime_sheet = wb[sheets[1]]
-    payoff_sheet.append(preamble + payoffs + opt_seeds)
+    payoff_sheet.append(preamble + payoffs + [max_degree] + [max_height] + opt_seeds)
     runtime_sheet.append(preamble + runtimes)
     wb.save(FILE_DIRECTORY_PREFIX + 'Experimental_Results.xlsx')
