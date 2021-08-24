@@ -104,6 +104,10 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
     plot_graphs = string_to_boolean(plot_graphs)
     debug = string_to_boolean(do_debug)
 
+    do_recursive_DP = False
+    if num_nodes < 200:
+        do_recursive_DP = True
+
     # all algorithms that require trees ALSO need to satisfy assumption 1!!!!!
     # cannot do remove cycles but not assumption 1 for any algorithms
     if do_remove_cycles:
@@ -118,7 +122,7 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
     # for each graph, create cluster and bipartite graphs then save results, graphs, and plot them
     for O, graph_type in zip(original_graphs, original_types):
         C, B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
-        payoffs, runtimes, opt_seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug)
+        payoffs, runtimes, opt_seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug, do_recursive_DP)
         
         ID = view.generate_ID()
 
@@ -152,25 +156,38 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
         C.clear()
         B.clear()
 
-def retest_old_file(original_graph_filename, plot_graphs="False", do_debug="False"):
+def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumption_1=None, plot_graphs="False", do_debug="False"):
     # get all information used to make ID in excel sheet
     if original_graph_filename[-4:] != ".txt":
        original_graph_filename = original_graph_filename + ".txt"
     location = FILE_LOCATION_PREFIX + original_graph_filename
-    k, criticality, graph_type, ID, do_remove_cycles, do_assumption_1, O = cff.create_from_file(location)
+    k, criticality, graph_type, ID, file_remove_cycles, file_assumption_1, O = cff.create_from_file(location)
     num_nodes = O.number_of_nodes()
+    do_recursive_DP = False
+    if num_nodes < 200:
+        do_recursive_DP = True
     print("Retesting " + original_graph_filename)
-    if do_remove_cycles: print("Remove Cycs: " + str(do_remove_cycles))
-    if do_assumption_1: print("Ass 1: " + str(do_assumption_1))
     plot_graphs = string_to_boolean(plot_graphs)
     debug = string_to_boolean(do_debug)
+    # use what file originally did unless ow specified
+    if do_remove_cycles == None:
+        do_remove_cycles = file_remove_cycles
+    else:
+        do_remove_cycles = string_to_boolean(do_remove_cycles)
+    if do_assumption_1 == None:
+        do_assumption_1 = file_assumption_1
+    else:
+        do_assumption_1 = string_to_boolean(do_assumption_1)
+    
+    if do_remove_cycles: print("Remove Cycs: " + str(do_remove_cycles))
+    if do_assumption_1: print("Ass 1: " + str(do_assumption_1))
     
     # create cluster and bipartite based on information from file
     C, B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
     if loops_through_while != 1:
         print("Criticalities were reset. Assumption 1 may not have been satisfied in this file")
         sys.exit()
-    payoffs, runtimes, opt_seeds= run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug)
+    payoffs, runtimes, opt_seeds= run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug, do_recursive_DP)
 
     max_degree = "-"
     max_height = "-"
@@ -247,7 +264,7 @@ Uses booleans remove_cycles and assumption_1 to id class of algorithm
         Indecies are based off of excel speadsheet "Experimental_Results.xlsx" with each algorithm result
         contained in one index. If the algorithm was not run, contains '-'
 """
-def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug):
+def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug, do_recursive_DP):
     # set default value of array (if an algorithm is not run)
     runtimes = []
     payoffs = []
@@ -273,15 +290,15 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug):
         runtimes[0] = stop - start
         payoffs[0] = payoff_knapsack
         print("Knacpsack (Greedy DP) Payoff: ", payoff_knapsack)
-
-        # compute payoff for recursive DP
-        start = timeit.default_timer()
-        payoff_root, payoff_no_root = tree_case.runRecursiveDP(C, k)
-        payoff_recursive_dp = max(payoff_root, payoff_no_root)
-        stop = timeit.default_timer()
-        runtimes[2] = stop - start
-        payoffs[2] = payoff_recursive_dp
-        print("Recursive DP payoff: ", payoff_recursive_dp)
+        if do_recursive_DP:
+            # compute payoff for recursive DP
+            start = timeit.default_timer()
+            payoff_root, payoff_no_root = tree_case.runRecursiveDP(C, k)
+            payoff_recursive_dp = max(payoff_root, payoff_no_root)
+            stop = timeit.default_timer()
+            runtimes[2] = stop - start
+            payoffs[2] = payoff_recursive_dp
+            print("Recursive DP payoff: ", payoff_recursive_dp)
 
         # # if there are no cycles, assumption 1 holds true to they can be run
         # # UPON TESTING, THIS IS FALSE!!!!!!!!!!!
@@ -321,21 +338,21 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug):
     payoffs[6] = payoff_blp
     print("Bipartite LP payoff: ", payoff_blp)
 
-    # run bipartite greedy algorithm
-    start = timeit.default_timer()
-    payoff_greedy = general_case.greedy_selection(B, k, debug)
-    stop = timeit.default_timer()
-    runtimes[4] = stop - start
-    payoffs[4] = payoff_greedy
-    print("Bipartite Greedy payoff: ", payoff_greedy)
+    # # run bipartite greedy algorithm
+    # start = timeit.default_timer()
+    # payoff_greedy = general_case.greedy_selection(B, k, debug)
+    # stop = timeit.default_timer()
+    # runtimes[4] = stop - start
+    # payoffs[4] = payoff_greedy
+    # print("Bipartite Greedy payoff: ", payoff_greedy)
 
-    # run bipartite forward thinking algorithm
-    start = timeit.default_timer()
-    payoff_forward_thinking = general_case.forward_thinking_greedy(B, k, debug)
-    stop = timeit.default_timer()
-    runtimes[5] = stop - start
-    payoffs[5] = payoff_forward_thinking
-    print("Forward-Thinking payoff: ", payoff_forward_thinking)
+    # # run bipartite forward thinking algorithm
+    # start = timeit.default_timer()
+    # payoff_forward_thinking = general_case.forward_thinking_greedy(B, k, debug)
+    # stop = timeit.default_timer()
+    # runtimes[5] = stop - start
+    # payoffs[5] = payoff_forward_thinking
+    # print("Forward-Thinking payoff: ", payoff_forward_thinking)
 
     return payoffs, runtimes, blp_seeds
 
@@ -392,9 +409,9 @@ def get_max_degree_and_height(G):
 #         sys.exit()
 
 # test_if_saved_graphs_same("100","5","0.5","True","True")
-# test_new_file("100","5","0.5","False","False")
+# test_new_file("500","10","0.5","True","True")
 # test_new_file("40","2","1","True","True")
-retest_old_file("17", "True")
+# retest_old_file("BA/2000/598", "False","False","True")
 # plt.show()
 
 # '''

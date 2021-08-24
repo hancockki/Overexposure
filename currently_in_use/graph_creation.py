@@ -69,26 +69,30 @@ def generate_test_graphs(O, threshold, do_remove_cycles, do_assumption_1):
         if count > MAX_ATTEMPTS_SASISFY_ASS_1:
             print("Parameters cannot feasibly satisfy parameters. Too few clusters are being generated (small number of nodes or very low criticality)")
             sys.exit()
-    B = None
+    
+    B = create_bipartite_from_cluster(C)
     # remove cycles and satisfy assumption 1 (never need to node sat ass 1 if removing cycles)
+    #wq: THIS IS SHITTY CODE!!!! NEED TO GO FROM OG->B->remove shared edges->cluster graph->remove cycles in future!!!!!!!!
     if do_remove_cycles:
-        remove_cycles(C)
-        B = create_bipartite_from_cluster(C)
+        # view.plot_bipartite(B,"bipartite before sat 1")
         statisfy_assumption_one(B)
+        # view.plot_bipartite(B,"bipartite after sat 1")
+        # view.plot_cluster(C,"cluster before anything")
         C_from_B = create_cluster_from_bipartite(B)
+        # view.plot_cluster(C_from_B,"cluster from bipartite sat 1")
+        remove_cycles(C_from_B)
+        # view.plot_cluster(C_from_B,"cluster remove cyc")
+        B_no_cyc = create_bipartite_from_cluster(C_from_B)
+        # view.plot_bipartite(B_no_cyc,"bipartite remove cyc")
         rejectingNodeDict.clear()
-        return C_from_B, B, count
+        return C_from_B, B_no_cyc, count
     
     # satisfy assumption 1
     if do_assumption_1:
-        B = create_bipartite_from_cluster(C)
         statisfy_assumption_one(B)
         C_from_B = create_cluster_from_bipartite(B)
         rejectingNodeDict.clear()
         return C_from_B, B, count
-    # create cluster graph with no modifications
-    else:
-        B = create_bipartite_from_cluster(C)
     rejectingNodeDict.clear()
     return C, B, count
 

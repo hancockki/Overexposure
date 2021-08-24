@@ -1,9 +1,9 @@
 import driver
 
 def main():
-    node_sizes = ["150", "500", "1000", "2000"] # ["150", "500", "1000", "2000"]
-    possible_k = ["5","10","20","50"] # ["5","10","20","50"]
-    possible_criticalities = ["0.5", "0.5", "0.5", "0.5"]
+    node_sizes = ["500", "1000", "2000"] # ["150", "500", "1000", "2000"]
+    possible_k = ["10","20","50"] # ["5","10","20","50"]
+    possible_criticalities = ["0.5", "0.5", "0.5"] # ["0.5", "0.5", "0.5", "0.5"]
     do_remove_cycles = "True"
     do_assumption_1 = "True"
 
@@ -15,9 +15,24 @@ def main():
             driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
 
 def test_BA_150():
-    for i in range(302):
-        if i % 3 == 1:
-            filename = "BA/150/" + str(i)
-            driver.retest_old_file(filename)
+    i = 3
+    while(True):
+        filename = "WS/150/" + str(i)
+        driver.retest_old_file(filename)
+        i = i + 3
 
-main()
+def retest_all_files():
+    graph_types = ["BA","ER","WS"]
+    offset = [1,2,3]
+    node_size = ["150", "500", "1000", "2000"]
+    do_remove_cycles = "False"
+    do_assumption_1 = "True"
+
+    for graph, ID_off in zip(graph_types, offset):
+        for size_offset, size in enumerate(node_size):
+            for i in range(50):
+                filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
+                # if filename[:3] != "BA/":
+                driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+
+retest_all_files()
