@@ -55,7 +55,7 @@ MAX_ATTEMPTS_SASISFY_ASS_1 = 100
 #method to test whether our input graph is correctly forming clusters, then runs dynamic programming
 #input -- n, number of nodes in random graph
 #           c, criticality
-def generate_test_graphs(O, threshold, do_remove_cycles, do_assumption_1):
+def generate_test_graphs(O, threshold):
     count = 0
     do_while = True
     while do_while:
@@ -71,32 +71,18 @@ def generate_test_graphs(O, threshold, do_remove_cycles, do_assumption_1):
             sys.exit()
     
     B = create_bipartite_from_cluster(C)
-    # this unmodified_B is used to calculate payoffs on the unmodified graph, using seed sets provided by the algorithms
+    # unmodified_B is used for general algorithms and calculating the payoffs of seeds picked from other algorithms (because there is no loss of info from the original graph for this bipartie)
     unmodified_B = B.copy()
-    # remove cycles and satisfy assumption 1 (never need to node sat ass 1 if removing cycles)
-    #wq: THIS IS SHITTY CODE!!!! NEED TO GO FROM OG->B->remove shared edges->cluster graph->remove cycles in future!!!!!!!!
-    if do_remove_cycles:
-        # view.plot_bipartite(B,"bipartite before sat 1")
-        statisfy_assumption_one(B)
-        # view.plot_bipartite(B,"bipartite after sat 1")
-        # view.plot_cluster(C,"cluster before anything")
-        C_from_B = create_cluster_from_bipartite(B)
-        # view.plot_cluster(C_from_B,"cluster from bipartite sat 1")
-        remove_cycles(C_from_B)
-        # view.plot_cluster(C_from_B,"cluster remove cyc")
-        B_no_cyc = create_bipartite_from_cluster(C_from_B)
-        # view.plot_bipartite(B_no_cyc,"bipartite remove cyc")
-        rejectingNodeDict.clear()
-        return C_from_B, B_no_cyc, unmodified_B, count
-    
-    # satisfy assumption 1
-    if do_assumption_1:
-        statisfy_assumption_one(B)
-        C_from_B = create_cluster_from_bipartite(B)
-        rejectingNodeDict.clear()
-        return C_from_B, B, unmodified_B, count
+
+    # cluster graph satisfy assumption 1. used for assumption one algorithms
+    statisfy_assumption_one(B)
+    C_sat_assume_one = create_cluster_from_bipartite(B)
+
+    # remove cycles and satisfy assumption 1 (never need to node sat ass 1 if removing cycles) used for tree algorithms
+    C_remove_cyc = C_sat_assume_one.copy()
+    remove_cycles(C_remove_cyc)
     rejectingNodeDict.clear()
-    return C, B, unmodified_B, count
+    return C_remove_cyc, C_sat_assume_one, unmodified_B, count
 
 """
 From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled

@@ -107,6 +107,9 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
     do_recursive_DP = False
     if num_nodes < 200:
         do_recursive_DP = True
+    do_forward = False
+    if num_nodes < 2000:
+        do_forward = True
 
     # all algorithms that require trees ALSO need to satisfy assumption 1!!!!!
     # cannot do remove cycles but not assumption 1 for any algorithms
@@ -121,14 +124,14 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
     
     # for each graph, create cluster and bipartite graphs then save results, graphs, and plot them
     for O, graph_type in zip(original_graphs, original_types):
-        C, B, unmodified_B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
-        runtimes, seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug, do_recursive_DP)
+        tree_case_graph, assumption_one_graph, general_graph, loops_through_while = graph_creation.generate_test_graphs(O, criticality)
+        runtimes, seeds = run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, do_recursive_DP, debug, do_forward)
         payoffs = []
         for seed_set in seeds:
             if seed_set == '-':
                 payoffs.append('-')
             else:
-                payoffs.append(calculate_payoff(unmodified_B, seed_set))
+                payoffs.append(calculate_payoff(general_graph, seed_set))
         
         ID = view.generate_ID()
 
@@ -150,17 +153,18 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
             # get error if attempt to plot more than 500 nodes
             if num_nodes < 500:
                 view.plot_original(O, criticality)
-            if len(C.nodes()) < 500:
-                view.plot_cluster(C, graph_type + " cluster graph")
-            if len(B.nodes()) < 500:
-                view.plot_bipartite(B, graph_type + " bipartite graph")
-       
-
-        if plot_graphs:
+            if len(tree_case_graph.nodes()) < 500:
+                view.plot_cluster(tree_case_graph, graph_type + " tree cluster graph")
+            if len(assumption_one_graph.nodes()) < 500:
+                view.plot_cluster(assumption_one_graph, graph_type + " assumption 1 cluster graph")
+            if len(general_graph.nodes()) < 500:
+                view.plot_bipartite(general_graph, graph_type + " general bipartite graph")
             plt.show()
+        if debug: print(tree_case_graph.edges.data())
 
-        C.clear()
-        B.clear()
+        tree_case_graph.clear()
+        assumption_one_graph.clear()
+        general_graph.clear()
 
 def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumption_1=None, plot_graphs="False", do_debug="False"):
     # get all information used to make ID in excel sheet
@@ -172,6 +176,9 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
     do_recursive_DP = False
     if num_nodes < 200:
         do_recursive_DP = True
+    do_forward = False
+    if num_nodes < 2000:
+        do_forward = True
     print("Retesting " + original_graph_filename)
     plot_graphs = string_to_boolean(plot_graphs)
     debug = string_to_boolean(do_debug)
@@ -189,23 +196,23 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
     if do_assumption_1: print("Ass 1: " + str(do_assumption_1))
     
     # create cluster and bipartite based on information from file
-    C, B, unmodified_B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
+    tree_case_graph, assumption_one_graph, general_graph, loops_through_while = graph_creation.generate_test_graphs(O, criticality)
     if loops_through_while != 1:
         print("Criticalities were reset. Assumption 1 may not have been satisfied in this file")
         sys.exit()
     
-    runtimes, seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug, do_recursive_DP)
+    runtimes, seeds = run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, do_recursive_DP, debug, do_forward)
     payoffs = []
     for seed_set in seeds:
         if seed_set == '-':
             payoffs.append('-')
         else:
-            payoffs.append(calculate_payoff(unmodified_B, seed_set))
+            payoffs.append(calculate_payoff(general_graph, seed_set))
 
     max_degree = "-"
     max_height = "-"
     if do_remove_cycles and O.number_of_nodes() < 1000:
-        max_degree, max_height = get_max_degree_and_height(C)
+        max_degree, max_height = get_max_degree_and_height(tree_case_graph)
         
     # save to excel. Also provides unique ID for each row to a test can be ran again
     view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, seeds[6])
@@ -215,15 +222,18 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
         # get error if attempt to plot more than 500 nodes
         if num_nodes < 500:
             view.plot_original(O, criticality)
-        if len(C.nodes()) < 500:
-            view.plot_cluster(C, graph_type + " cluster graph")
-        if len(B.nodes()) < 500:
-            view.plot_bipartite(B, graph_type + " bipartite graph")
+        if len(tree_case_graph.nodes()) < 500:
+            view.plot_cluster(tree_case_graph, graph_type + " tree cluster graph")
+        if len(assumption_one_graph.nodes()) < 500:
+            view.plot_cluster(assumption_one_graph, graph_type + " assumption 1 cluster graph")
+        if len(general_graph.nodes()) < 500:
+            view.plot_bipartite(general_graph, graph_type + " general bipartite graph")
         plt.show()
-    if debug: print(C.edges.data())
+    if debug: print(tree_case_graph.edges.data())
 
-    C.clear()
-    B.clear()
+    tree_case_graph.clear()
+    assumption_one_graph.clear()
+    general_graph.clear()
     O.clear()
 
     
@@ -277,7 +287,7 @@ Uses booleans remove_cycles and assumption_1 to id class of algorithm
         Indecies are based off of excel speadsheet "Experimental_Results.xlsx" with each algorithm result
         contained in one index. If the algorithm was not run, contains '-'
 """
-def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug, do_recursive_DP):
+def run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, do_recursive_DP, debug, do_forward):
     # set default value of array (if an algorithm is not run)
     runtimes = []
     payoffs = []
@@ -287,70 +297,64 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug, do_recursive
         payoffs.append('-')
         seeds.append('-')
     
-    # algorithms that work with trees
-    if remove_cycles: print("Remove Cycs: " + str(remove_cycles))
-    if assumption_1: print("Ass 1: " + str(assumption_1) + "\n")
-    
     print("Doing Tests")
-    if remove_cycles:
-        print("\nDoing Tree Algorithms with Assumption 1 Satisfied")
-        # compute payoff using knapsack approach
-        start = timeit.default_timer()
-        payoff_knapsack, seedset = tree_case.knapsack(C, C.number_of_nodes(), k)
-        stop = timeit.default_timer()
-        # if payoff is less than 0, best to not pick any seeds
-        if payoff_knapsack < 0:
-            payoff_knapsack = 0
-            seedset = []
-        runtimes[0] = stop - start
-        payoffs[0] = payoff_knapsack
-        seeds[0] = seedset
-        print("Knacpsack (Greedy DP) Payoff: ", payoff_knapsack)
-        if do_recursive_DP:
-            # compute payoff for recursive DP
-            start = timeit.default_timer()
-            payoff_root, payoff_no_root = tree_case.runRecursiveDP(C, k)
-            payoff_recursive_dp = max(payoff_root, payoff_no_root)
-            stop = timeit.default_timer()
-            runtimes[2] = stop - start
-            payoffs[2] = payoff_recursive_dp
-            print("Recursive DP payoff: ", payoff_recursive_dp)
 
-        # # if there are no cycles, assumption 1 holds true to they can be run
-        # # UPON TESTING, THIS IS FALSE!!!!!!!!!!!
-        # assumption_1 = True
+    # tree algorithms
 
-    # algorithm for assumption 1 (nodes cannot share more than two rejecting nodes, which means that there CAN be cycles)
-    if assumption_1:
-        print("\nDoing Assumption 1 Algorithms")
-        # compute payoff for most basic greedy algorithm
+    print("\nDoing Tree Algorithms with Assumption 1 Satisfied")
+    # compute payoff using knapsack approach
+    start = timeit.default_timer()
+    payoff_knapsack, seedset = tree_case.knapsack(tree_case_graph, tree_case_graph.number_of_nodes(), k)
+    stop = timeit.default_timer()
+    # if payoff is less than 0, best to not pick any seeds
+    if payoff_knapsack < 0:
+        payoff_knapsack = 0
+        seedset = []
+    runtimes[0] = stop - start
+    payoffs[0] = payoff_knapsack
+    seeds[0] = seedset
+    print("Knacpsack (Greedy DP) Payoff: ", payoff_knapsack)
+    if do_recursive_DP:
+        # compute payoff for recursive DP
         start = timeit.default_timer()
-        payoff_greedy, greedy_seedset = assumption_one_case.kHighestClusters(C, k, debug)
+        payoff_root, payoff_no_root = tree_case.runRecursiveDP(tree_case_graph, k)
+        payoff_recursive_dp = max(payoff_root, payoff_no_root)
         stop = timeit.default_timer()
-        # if payoff is less than 0, best to not pick any seeds
-        if payoff_greedy < 0:
-            payoff_greedy = 0
-            greedy_seedset = []
-        runtimes[1] = stop - start
-        payoffs[1] = payoff_greedy
-        seeds[1] = greedy_seedset
-        print("K-Highest Seeds Chosen: ", greedy_seedset, " with payoff: ", payoff_greedy)
+        runtimes[2] = stop - start
+        payoffs[2] = payoff_recursive_dp
+        print("Recursive DP payoff: ", payoff_recursive_dp)
 
-        # run linear program on cluster graph
-        start = timeit.default_timer()
-        payoff_clp, clp_seedset = assumption_one_case.lp_setup(C, k, debug)
-        stop = timeit.default_timer()
-        runtimes[3] = stop - start
-        payoffs[3] = payoff_clp
-        seeds[3] = clp_seedset
-        print("Cluster LP payoff: ", payoff_clp)
+    # algorithms for assumption 1 (nodes cannot share more than two rejecting nodes, which means that there CAN be cycles)
+    
+    print("\nDoing Assumption 1 Algorithms")
+    # compute payoff for most basic greedy algorithm
+    start = timeit.default_timer()
+    payoff_greedy, greedy_seedset = assumption_one_case.kHighestClusters(assumption_one_graph, k, debug)
+    stop = timeit.default_timer()
+    # if payoff is less than 0, best to not pick any seeds
+    if payoff_greedy < 0:
+        payoff_greedy = 0
+        greedy_seedset = []
+    runtimes[1] = stop - start
+    payoffs[1] = payoff_greedy
+    seeds[1] = greedy_seedset
+    print("K-Highest Seeds Chosen: ", greedy_seedset, " with payoff: ", payoff_greedy)
+
+    # run linear program on cluster graph
+    start = timeit.default_timer()
+    payoff_clp, clp_seedset = assumption_one_case.lp_setup(assumption_one_graph, k, debug)
+    stop = timeit.default_timer()
+    runtimes[3] = stop - start
+    payoffs[3] = payoff_clp
+    seeds[3] = clp_seedset
+    print("Cluster LP payoff: ", payoff_clp)
 
     # all general test cases (no restrictions)
 
     print("\nDoing General Algorithms")
     # run bipartite linear program
     start = timeit.default_timer()
-    payoff_blp, blp_seeds = general_case.solve_blp(B, k, debug)
+    payoff_blp, blp_seeds = general_case.solve_blp(general_graph, k, debug)
     stop = timeit.default_timer()
     runtimes[6] = stop - start
     payoffs[6] = payoff_blp
@@ -359,21 +363,22 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug, do_recursive
 
     # run bipartite greedy algorithm
     start = timeit.default_timer()
-    payoff_greedy, bipartite_greedy_seeds = general_case.greedy_selection(B, k, debug)
+    payoff_greedy, bipartite_greedy_seeds = general_case.greedy_selection(general_graph, k, debug)
     stop = timeit.default_timer()
     runtimes[4] = stop - start
     payoffs[4] = payoff_greedy
     seeds[4] = bipartite_greedy_seeds
     print("Bipartite Greedy payoff: ", payoff_greedy)
 
-    # run bipartite forward thinking algorithm
-    start = timeit.default_timer()
-    payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy(B, k, debug)
-    stop = timeit.default_timer()
-    runtimes[5] = stop - start
-    payoffs[5] = payoff_forward_thinking
-    seeds[5] = forward_seeds
-    print("Forward-Thinking payoff: ", payoff_forward_thinking)
+    if do_forward:
+        # run bipartite forward thinking algorithm
+        start = timeit.default_timer()
+        payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy(general_graph, k, debug)
+        stop = timeit.default_timer()
+        runtimes[5] = stop - start
+        payoffs[5] = payoff_forward_thinking
+        seeds[5] = forward_seeds
+        print("Forward-Thinking payoff: ", payoff_forward_thinking)
 
     return runtimes, seeds
 
@@ -459,7 +464,7 @@ def get_max_degree_and_height(G):
 # test_if_saved_graphs_same("100","5","0.5","True","True")
 # test_new_file("500","10","0.5","True","True")
 # test_new_file("40","2","1","True","True")
-retest_old_file("BA/150/1", "True","True","True")
+# retest_old_file("BA/150/1", "True","True","True")
 # plt.show()
 
 # '''

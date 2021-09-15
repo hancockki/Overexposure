@@ -14,19 +14,28 @@ def main():
             print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
             driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
 
-def test_BA_150():
-    i = 3
-    while(True):
-        filename = "WS/150/" + str(i)
-        driver.retest_old_file(filename)
-        i = i + 3
+def test():
+    graph_types = ["BA"]
+    offset = [1]
+    node_size = ["2000"]
+    do_remove_cycles = "False"
+    do_assumption_1 = "False"
 
-def retest_all_files():
-    graph_types = ["BA","ER","WS"]
-    offset = [1,2,3]
+    for graph, ID_off in zip(graph_types, offset):
+        for size_offset, size in enumerate(node_size):
+            size_offset = 3
+            for i in range(50):
+                if i >= 9:
+                    filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
+                    # if filename[:3] != "BA/":
+                    driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+
+def retest_all_ER_WS():
+    graph_types = ["ER","WS"]
+    offset = [2,3]
     node_size = ["150", "500", "1000", "2000"]
     do_remove_cycles = "False"
-    do_assumption_1 = "True"
+    do_assumption_1 = "False"
 
     for graph, ID_off in zip(graph_types, offset):
         for size_offset, size in enumerate(node_size):
@@ -35,4 +44,18 @@ def retest_all_files():
                 # if filename[:3] != "BA/":
                 driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
 
-retest_all_files()
+def retest_all_files():
+    graph_types = ["BA","ER","WS"]
+    offset = [1,2,3]
+    node_size = ["150", "500", "1000", "2000"]
+    do_remove_cycles = "False"
+    do_assumption_1 = "False"
+
+    for graph, ID_off in zip(graph_types, offset):
+        for size_offset, size in enumerate(node_size):
+            for i in range(50):
+                filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
+                # if filename[:3] != "BA/":
+                driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+
+retest_all_ER_WS()
