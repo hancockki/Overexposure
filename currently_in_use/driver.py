@@ -121,8 +121,14 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
     
     # for each graph, create cluster and bipartite graphs then save results, graphs, and plot them
     for O, graph_type in zip(original_graphs, original_types):
-        C, B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
-        payoffs, runtimes, opt_seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug, do_recursive_DP)
+        C, B, unmodified_B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
+        runtimes, seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug, do_recursive_DP)
+        payoffs = []
+        for seed_set in seeds:
+            if seed_set == '-':
+                payoffs.append('-')
+            else:
+                payoffs.append(calculate_payoff(unmodified_B, seed_set))
         
         ID = view.generate_ID()
 
@@ -137,7 +143,7 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
             max_degree, max_height = get_max_degree_and_height(C)
         
         # save to excel. Also provides unique ID for each row to a test can be ran again
-        view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, opt_seeds)
+        view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, seeds[6])
             
         # plot the different graphs
         if plot_graphs:
@@ -183,11 +189,18 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
     if do_assumption_1: print("Ass 1: " + str(do_assumption_1))
     
     # create cluster and bipartite based on information from file
-    C, B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
+    C, B, unmodified_B, loops_through_while = graph_creation.generate_test_graphs(O, criticality, do_remove_cycles, do_assumption_1)
     if loops_through_while != 1:
         print("Criticalities were reset. Assumption 1 may not have been satisfied in this file")
         sys.exit()
-    payoffs, runtimes, opt_seeds= run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug, do_recursive_DP)
+    
+    runtimes, seeds = run_tests_on_graph(C, B, k, do_remove_cycles, do_assumption_1, debug, do_recursive_DP)
+    payoffs = []
+    for seed_set in seeds:
+        if seed_set == '-':
+            payoffs.append('-')
+        else:
+            payoffs.append(calculate_payoff(unmodified_B, seed_set))
 
     max_degree = "-"
     max_height = "-"
@@ -195,7 +208,7 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
         max_degree, max_height = get_max_degree_and_height(C)
         
     # save to excel. Also provides unique ID for each row to a test can be ran again
-    view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, opt_seeds)
+    view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, seeds[6])
     
     # plot the different graphs
     if plot_graphs:
@@ -268,9 +281,11 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug, do_recursive
     # set default value of array (if an algorithm is not run)
     runtimes = []
     payoffs = []
+    seeds = []
     for i in range(7):
         runtimes.append('-')
         payoffs.append('-')
+        seeds.append('-')
     
     # algorithms that work with trees
     if remove_cycles: print("Remove Cycs: " + str(remove_cycles))
@@ -289,6 +304,7 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug, do_recursive
             seedset = []
         runtimes[0] = stop - start
         payoffs[0] = payoff_knapsack
+        seeds[0] = seedset
         print("Knacpsack (Greedy DP) Payoff: ", payoff_knapsack)
         if do_recursive_DP:
             # compute payoff for recursive DP
@@ -317,14 +333,16 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug, do_recursive
             greedy_seedset = []
         runtimes[1] = stop - start
         payoffs[1] = payoff_greedy
+        seeds[1] = greedy_seedset
         print("K-Highest Seeds Chosen: ", greedy_seedset, " with payoff: ", payoff_greedy)
 
         # run linear program on cluster graph
         start = timeit.default_timer()
-        payoff_clp = assumption_one_case.lp_setup(C, k, debug)
+        payoff_clp, clp_seedset = assumption_one_case.lp_setup(C, k, debug)
         stop = timeit.default_timer()
         runtimes[3] = stop - start
         payoffs[3] = payoff_clp
+        seeds[3] = clp_seedset
         print("Cluster LP payoff: ", payoff_clp)
 
     # all general test cases (no restrictions)
@@ -336,25 +354,55 @@ def run_tests_on_graph(C, B, k, remove_cycles, assumption_1, debug, do_recursive
     stop = timeit.default_timer()
     runtimes[6] = stop - start
     payoffs[6] = payoff_blp
+    seeds[6] = blp_seeds
     print("Bipartite LP payoff: ", payoff_blp)
 
-    # # run bipartite greedy algorithm
-    # start = timeit.default_timer()
-    # payoff_greedy = general_case.greedy_selection(B, k, debug)
-    # stop = timeit.default_timer()
-    # runtimes[4] = stop - start
-    # payoffs[4] = payoff_greedy
-    # print("Bipartite Greedy payoff: ", payoff_greedy)
+    # run bipartite greedy algorithm
+    start = timeit.default_timer()
+    payoff_greedy, bipartite_greedy_seeds = general_case.greedy_selection(B, k, debug)
+    stop = timeit.default_timer()
+    runtimes[4] = stop - start
+    payoffs[4] = payoff_greedy
+    seeds[4] = bipartite_greedy_seeds
+    print("Bipartite Greedy payoff: ", payoff_greedy)
 
-    # # run bipartite forward thinking algorithm
-    # start = timeit.default_timer()
-    # payoff_forward_thinking = general_case.forward_thinking_greedy(B, k, debug)
-    # stop = timeit.default_timer()
-    # runtimes[5] = stop - start
-    # payoffs[5] = payoff_forward_thinking
-    # print("Forward-Thinking payoff: ", payoff_forward_thinking)
+    # run bipartite forward thinking algorithm
+    start = timeit.default_timer()
+    payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy(B, k, debug)
+    stop = timeit.default_timer()
+    runtimes[5] = stop - start
+    payoffs[5] = payoff_forward_thinking
+    seeds[5] = forward_seeds
+    print("Forward-Thinking payoff: ", payoff_forward_thinking)
 
-    return payoffs, runtimes, blp_seeds
+    return runtimes, seeds
+
+def intersection(lst1, lst2):
+    lst3 = [value for value in lst1 if value in lst2]
+    return lst3
+
+def calculate_payoff(unmodified_B, seeds):
+    weight_dict = dict(nx.get_node_attributes(unmodified_B,'weight'))
+    edges = list(unmodified_B.edges())
+    rej_nodes = set()
+    real_payoff = 0
+    for node in seeds:
+        #compute intersection of in edges from unmodified graph and
+        #the edges we have not yet removed from the modified graph
+        num_neg = len(intersection(edges, unmodified_B.in_edges(node)))
+        real_payoff = real_payoff - num_neg + weight_dict[node]
+        rej_nodes = [x[0] for x in unmodified_B.in_edges(node)]
+        #iterate through edges, remove any edge that contains rej nodes connected to picked cluster
+        i = 0
+        while i < len(edges):
+            if edges[i][0] in rej_nodes:
+                edges.pop(i)
+            else:
+                i += 1
+        #print("Num edges: ", num_neg, " Max weight node: ", max_weight_node)
+        #unmodified_B.remove_node(max_weight_node)
+        rej_nodes = set()
+    return real_payoff
 
 def string_to_boolean(input):
     if input == "false" or input == "False" or input == "0":
@@ -411,7 +459,7 @@ def get_max_degree_and_height(G):
 # test_if_saved_graphs_same("100","5","0.5","True","True")
 # test_new_file("500","10","0.5","True","True")
 # test_new_file("40","2","1","True","True")
-# retest_old_file("BA/2000/598", "False","False","True")
+retest_old_file("BA/150/1", "True","True","True")
 # plt.show()
 
 # '''

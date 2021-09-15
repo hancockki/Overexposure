@@ -75,9 +75,9 @@ def recursiveDP(G, tree, k, source, storePayoff, witness):
        # print("LEAVE SOURCE")
         for p in partitions_list: #loop through partitions of seeds
             take_child = {} #reset take_child
-            if p == [2,1,0] and source == 1:
-                continue
-                #print("debugging") #IGNORE, used for debugging
+            # if p == [2,1,0] and source == 1: #wq: YIKES THIS WAS UNCOMMENTED FOR ALL TESTS! THIS WOULD BE WHY NOT OPTIMAL
+            #     continue
+            #     #print("debugging") #IGNORE, used for debugging
            # print(p)
             sum_so_far = 0
             allocation = {}

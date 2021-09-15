@@ -61,13 +61,13 @@ def solve_blp(G,k, debug):
     status = lp.solve(PULP_CBC_CMD(msg=0)) # PULP_CBC_CMD(msg=0)
     
     if debug: print("Status:",status)
-    seeds = []
+    seed_set = []
     for var in lp.variables():
-        if value(var) == 1:
-            seeds.append(str(var))
-            if debug: print(var,"=",value(var))
+        if value(var) == 1 and var.name[0] == 'x':
+            if debug: print(var, "=", value(var))
+            seed_set.append(int(var.name[2:]))
     if debug: print("OPT Bipartite=",value(lp.objective))
-    return value(lp.objective), seeds
+    return value(lp.objective), seed_set
 
 def intersection(lst1, lst2):
     lst3 = [value for value in lst1 if value in lst2]
@@ -82,6 +82,7 @@ def greedy_selection(G, k, debug):
     max_weight = 0
     max_weight_node = None
     total_payoff = 0
+    seed_set = []
     if debug: print("Weight dictionary:\n", nx.get_node_attributes(G,'weight'))
     if debug: print("Edges: \n", G.edges())
     weight_dict = dict(nx.get_node_attributes(G,'weight'))
@@ -100,6 +101,7 @@ def greedy_selection(G, k, debug):
                 max_weight = payoff - num_neg
                 max_weight_node = node
         if max_weight_node is not None:
+            seed_set.append(max_weight_node)
             weight_dict[max_weight_node] = -float("inf")
             #add rej nodes connected to highest payoff cluster to list
             #print("Max weight node: ", max_weight_node)
@@ -119,7 +121,7 @@ def greedy_selection(G, k, debug):
         rej_nodes = set()
         max_weight_node = None
     if debug: print("Payoff greedy bipartite: ", total_payoff)
-    return total_payoff
+    return total_payoff, seed_set
 
 """ 
 TODO: use deepcopy to copy G at the beginning of the method, and then
@@ -128,6 +130,7 @@ delete edges within the copy of G rather than copying the list of edges
 def forward_thinking_greedy(G, k, debug):
     max_weight_node = None
     payoff = 0
+    seed_set = []
     max_weight = 0
     weight_total = 0
     weight_dict = dict(nx.get_node_attributes(G,'weight'))
@@ -174,6 +177,7 @@ def forward_thinking_greedy(G, k, debug):
             neg_nodes1 = set() #reinitialize for first for loop
         if max_weight_node is not None: #we picked a node
             payoff += weight_dict_sorted[max_weight_node] - len(max_neg_nodes)
+            seed_set.append(max_weight_node)
             if debug: print("Adding ", weight_dict[max_weight_node], " to total payoff")
             j = 0
             """
@@ -201,7 +205,7 @@ def forward_thinking_greedy(G, k, debug):
         if debug: print("Max weight node: ", max_weight_node)
         max_weight_node = None
     if debug: print("Payoff forward thinking bipartite: ", payoff)
-    return payoff
+    return payoff, seed_set
 
 
 '''

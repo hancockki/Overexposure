@@ -16,7 +16,10 @@ def kHighestClusters(G, k, debug=False):
     if debug: print(weights_list)
     #print(weights_list)
     payoff = computePayoffGreedy(G, weights_list[0:k])
-    return payoff, weights_list[0:k]
+    seed_set = []
+    for weight_node_tuple in weights_list[0:k]:
+        seed_set.append(weight_node_tuple[1])
+    return payoff, seed_set
        
 """
 Compute the payoff for the greedy algorithm.
@@ -92,9 +95,10 @@ def lp_setup(G, k, debug):
     if debug: print("Status:", status)
 
     #Print solution
-    if debug:
-        for var in prob.variables():
-            if value(var) == 1:
-                print(var, "=", value(var))
-        print("OPT LP=", value(prob.objective))
-    return value(prob.objective)
+    seed_set = []
+    for var in prob.variables():
+        if value(var) == 1 and var.name[0] == 'N':
+            if debug: print(var, "=", value(var))
+            seed_set.append(int(var.name[6:]))
+    print("OPT LP=", value(prob.objective))
+    return value(prob.objective), seed_set
