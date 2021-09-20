@@ -143,7 +143,7 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
         max_degree = "-"
         max_height = "-"
         if do_remove_cycles and O.number_of_nodes() < 1000:
-            max_degree, max_height = get_max_degree_and_height(C)
+            max_degree, max_height = get_max_degree_and_height(tree_case_graph)
         
         # save to excel. Also provides unique ID for each row to a test can be ran again
         view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, seeds[6])
@@ -292,7 +292,7 @@ def run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, 
     runtimes = []
     payoffs = []
     seeds = []
-    for i in range(7):
+    for i in range(9):
         runtimes.append('-')
         payoffs.append('-')
         seeds.append('-')
@@ -310,9 +310,9 @@ def run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, 
     if payoff_knapsack < 0:
         payoff_knapsack = 0
         seedset = []
-    runtimes[0] = stop - start
-    payoffs[0] = payoff_knapsack
-    seeds[0] = seedset
+    runtimes[1] = stop - start
+    payoffs[1] = payoff_knapsack
+    seeds[1] = seedset
     print("Knacpsack (Greedy DP) Payoff: ", payoff_knapsack)
     if do_recursive_DP:
         # compute payoff for recursive DP
@@ -335,18 +335,18 @@ def run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, 
     if payoff_greedy < 0:
         payoff_greedy = 0
         greedy_seedset = []
-    runtimes[1] = stop - start
-    payoffs[1] = payoff_greedy
-    seeds[1] = greedy_seedset
+    runtimes[3] = stop - start
+    payoffs[3] = payoff_greedy
+    seeds[3] = greedy_seedset
     print("K-Highest Seeds Chosen: ", greedy_seedset, " with payoff: ", payoff_greedy)
 
     # run linear program on cluster graph
     start = timeit.default_timer()
     payoff_clp, clp_seedset = assumption_one_case.lp_setup(assumption_one_graph, k, debug)
     stop = timeit.default_timer()
-    runtimes[3] = stop - start
-    payoffs[3] = payoff_clp
-    seeds[3] = clp_seedset
+    runtimes[4] = stop - start
+    payoffs[4] = payoff_clp
+    seeds[4] = clp_seedset
     print("Cluster LP payoff: ", payoff_clp)
 
     # all general test cases (no restrictions)
@@ -356,18 +356,31 @@ def run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, 
     start = timeit.default_timer()
     payoff_blp, blp_seeds = general_case.solve_blp(general_graph, k, debug)
     stop = timeit.default_timer()
-    runtimes[6] = stop - start
-    payoffs[6] = payoff_blp
-    seeds[6] = blp_seeds
+    runtimes[8] = stop - start
+    payoffs[8] = payoff_blp
+    seeds[8] = blp_seeds
     print("Bipartite LP payoff: ", payoff_blp)
+
+    # run bipartite simple greedy algorithm
+    start = timeit.default_timer()
+    payoff_simple_greedy, bipartite_simple_greedy_seeds = general_case.simple_greedy_selection(general_graph, k, debug)
+    stop = timeit.default_timer()
+    if payoff_simple_greedy < 0:
+        payoff_simple_greedy = 0
+        bipartite_simple_greedy_seeds = []
+    runtimes[5] = stop - start
+    payoffs[5] = payoff_simple_greedy
+    seeds[5] = bipartite_simple_greedy_seeds
+    print("Bipartite Greedy payoff: ", payoff_greedy)
+
 
     # run bipartite greedy algorithm
     start = timeit.default_timer()
     payoff_greedy, bipartite_greedy_seeds = general_case.greedy_selection(general_graph, k, debug)
     stop = timeit.default_timer()
-    runtimes[4] = stop - start
-    payoffs[4] = payoff_greedy
-    seeds[4] = bipartite_greedy_seeds
+    runtimes[6] = stop - start
+    payoffs[6] = payoff_greedy
+    seeds[6] = bipartite_greedy_seeds
     print("Bipartite Greedy payoff: ", payoff_greedy)
 
     if do_forward:
@@ -375,10 +388,19 @@ def run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, 
         start = timeit.default_timer()
         payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy(general_graph, k, debug)
         stop = timeit.default_timer()
-        runtimes[5] = stop - start
-        payoffs[5] = payoff_forward_thinking
-        seeds[5] = forward_seeds
+        runtimes[7] = stop - start
+        payoffs[7] = payoff_forward_thinking
+        seeds[7] = forward_seeds
         print("Forward-Thinking payoff: ", payoff_forward_thinking)
+
+    # run bipartite random selection
+    start = timeit.default_timer()
+    payoff_random, random_seeds = general_case.random_selection(general_graph, k, debug)
+    stop = timeit.default_timer()
+    runtimes[0] = stop - start
+    payoffs[0] = payoff_random
+    seeds[0] = random_seeds
+
 
     return runtimes, seeds
 
@@ -386,28 +408,38 @@ def intersection(lst1, lst2):
     lst3 = [value for value in lst1 if value in lst2]
     return lst3
 
+# # wildly silly way of doing this
+# def calculate_payoff(unmodified_B, seeds):
+#     weight_dict = dict(nx.get_node_attributes(unmodified_B,'weight'))
+#     edges = list(unmodified_B.edges())
+#     rej_nodes = set()
+#     real_payoff = 0
+#     for node in seeds:
+#         #compute intersection of in edges from unmodified graph and
+#         #the edges we have not yet removed from the modified graph
+#         num_neg = len(intersection(edges, unmodified_B.in_edges(node)))
+#         real_payoff = real_payoff - num_neg + weight_dict[node]
+#         rej_nodes = [x[0] for x in unmodified_B.in_edges(node)]
+#         #iterate through edges, remove any edge that contains rej nodes connected to picked cluster
+#         i = 0
+#         while i < len(edges):
+#             if edges[i][0] in rej_nodes:
+#                 edges.pop(i)
+#             else:
+#                 i += 1
+#         #print("Num edges: ", num_neg, " Max weight node: ", max_weight_node)
+#         #unmodified_B.remove_node(max_weight_node)
+#         rej_nodes = set()
+#     return real_payoff
+
 def calculate_payoff(unmodified_B, seeds):
-    weight_dict = dict(nx.get_node_attributes(unmodified_B,'weight'))
-    edges = list(unmodified_B.edges())
     rej_nodes = set()
     real_payoff = 0
     for node in seeds:
-        #compute intersection of in edges from unmodified graph and
-        #the edges we have not yet removed from the modified graph
-        num_neg = len(intersection(edges, unmodified_B.in_edges(node)))
-        real_payoff = real_payoff - num_neg + weight_dict[node]
-        rej_nodes = [x[0] for x in unmodified_B.in_edges(node)]
-        #iterate through edges, remove any edge that contains rej nodes connected to picked cluster
-        i = 0
-        while i < len(edges):
-            if edges[i][0] in rej_nodes:
-                edges.pop(i)
-            else:
-                i += 1
-        #print("Num edges: ", num_neg, " Max weight node: ", max_weight_node)
-        #unmodified_B.remove_node(max_weight_node)
-        rej_nodes = set()
-    return real_payoff
+        real_payoff += unmodified_B.nodes[node]['weight']
+        for rejects in unmodified_B.in_edges(node):
+            rej_nodes.add(rejects[0])
+    return real_payoff - len(rej_nodes)
 
 def string_to_boolean(input):
     if input == "false" or input == "False" or input == "0":
@@ -462,9 +494,9 @@ def get_max_degree_and_height(G):
 #         sys.exit()
 
 # test_if_saved_graphs_same("100","5","0.5","True","True")
-# test_new_file("500","10","0.5","True","True")
+# test_new_file("20","2","0.5","True","True","True")
 # test_new_file("40","2","1","True","True")
-# retest_old_file("BA/150/1", "True","True","True")
+# retest_old_file("BA/150/76", "True","True","True")
 # plt.show()
 
 # '''

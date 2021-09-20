@@ -17,18 +17,17 @@ def main():
 def test():
     graph_types = ["BA"]
     offset = [1]
-    node_size = ["2000"]
+    node_size = ["150"]
     do_remove_cycles = "False"
     do_assumption_1 = "False"
 
     for graph, ID_off in zip(graph_types, offset):
         for size_offset, size in enumerate(node_size):
-            size_offset = 3
+            size_offset = 0
             for i in range(50):
-                if i >= 9:
-                    filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
-                    # if filename[:3] != "BA/":
-                    driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+                filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
+                # if filename[:3] != "BA/":
+                driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
 
 def retest_all_ER_WS():
     graph_types = ["ER","WS"]
@@ -58,4 +57,18 @@ def retest_all_files():
                 # if filename[:3] != "BA/":
                 driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
 
-retest_all_ER_WS()
+def retest_BA():
+    graph_types = ["BA"]
+    offset = [1]
+    node_size = ["150", "500", "1000", "2000"]
+    do_remove_cycles = "False"
+    do_assumption_1 = "False"
+
+    for graph, ID_off in zip(graph_types, offset):
+        for size_offset, size in enumerate(node_size):
+            for i in range(50):
+                filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
+                # if filename[:3] != "BA/":
+                driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+
+retest_BA()

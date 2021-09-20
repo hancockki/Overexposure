@@ -1,5 +1,6 @@
 import networkx as nx
 import math
+import random
 from pulp import *
 import itertools
 from itertools import combinations
@@ -72,6 +73,52 @@ def solve_blp(G,k, debug):
 def intersection(lst1, lst2):
     lst3 = [value for value in lst1 if value in lst2]
     return lst3
+
+
+def simple_greedy_selection(B, k, debug):
+    # create list of weights of clusters with their corresponding node_ID
+    weight_node_list = []
+    for node in B.nodes():
+        if B.nodes[node]['bipartite'] == 0:
+            weight = B.nodes[node]['weight']
+            weight_node_list.append((weight,node))
+    # sort the list of weight,node pairs from highest to lowest weights
+    weight_node_list = sorted(weight_node_list, reverse=True)
+    payoff = 0
+    rej_nodes = set()
+    seed_set = []
+    # calculate payoff of selecting the largest weight nodes (with no consideration for the rejects associated with them)
+    for weight, node in weight_node_list[0:k]:
+        payoff += weight
+        seed_set.append(node)
+        for rejects in B.in_edges(node):
+            rej_nodes.add(rejects[0])
+    return payoff - len(rej_nodes), seed_set
+
+def random_selection(B, k, debug):
+    clusters = []
+    # get all the cluster nodes
+    for node in B.nodes():
+        if B.nodes[node]['bipartite'] == 0:
+            clusters.append(node)
+
+    seed_set = []
+    rej_nodes = set()
+    payoff = 0
+    # pick k random clusters
+    for i in range(k):
+        try:
+            cluster_location = random.randint(0,len(clusters) - 1)
+            selected_cluster = clusters.pop(cluster_location)
+            seed_set.append(selected_cluster)
+            # calculate payoff
+            payoff += B.nodes[selected_cluster]['weight']
+            for rejects in B.in_edges(selected_cluster):
+                rej_nodes.add(rejects[0])
+        except ValueError:
+            continue
+    return payoff - len(rej_nodes), seed_set
+
 
 """
 Greedy select the k highest nodes, deleting the edges between the

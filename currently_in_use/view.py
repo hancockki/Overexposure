@@ -163,8 +163,8 @@ def write_results_to_excel(preamble, payoffs, runtimes, max_degree, max_height, 
     wb = openpyxl.load_workbook(FILE_DIRECTORY_PREFIX + 'Experimental_Results.xlsx')
     print("WRITING RESULTS")
     sheets = wb.sheetnames
-    payoff_sheet = wb[sheets[0]]
-    runtime_sheet = wb[sheets[1]]
-    payoff_sheet.append(preamble + payoffs + [max_degree] + [max_height] + opt_seeds)
+    general_payoff_sheet = wb[sheets[0]]
+    runtime_sheet = wb[sheets[2]]
+    general_payoff_sheet.append(preamble + payoffs + [max_degree] + [max_height] + opt_seeds)
     runtime_sheet.append(preamble + runtimes)
     wb.save(FILE_DIRECTORY_PREFIX + 'Experimental_Results.xlsx')
