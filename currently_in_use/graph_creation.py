@@ -82,6 +82,7 @@ def generate_test_graphs(O, threshold):
     C_remove_cyc = C_sat_assume_one.copy()
     remove_cycles(C_remove_cyc)
     rejectingNodeDict.clear()
+    B.clear()
     return C_remove_cyc, C_sat_assume_one, unmodified_B, count
 
 """

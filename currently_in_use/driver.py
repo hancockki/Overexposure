@@ -125,7 +125,7 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
     # for each graph, create cluster and bipartite graphs then save results, graphs, and plot them
     for O, graph_type in zip(original_graphs, original_types):
         tree_case_graph, assumption_one_graph, general_graph, loops_through_while = graph_creation.generate_test_graphs(O, criticality)
-        runtimes, seeds = run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, do_recursive_DP, debug, do_forward)
+        runtimes, seeds, payoffs_by_algorithim = run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, do_recursive_DP, debug, do_forward)
         payoffs = []
         for seed_set in seeds:
             if seed_set == '-':
@@ -146,7 +146,7 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
             max_degree, max_height = get_max_degree_and_height(tree_case_graph)
         
         # save to excel. Also provides unique ID for each row to a test can be ran again
-        view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, seeds[6])
+        view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, payoffs_by_algorithim, max_degree, max_height, seeds[6])
             
         # plot the different graphs
         if plot_graphs:
@@ -201,7 +201,7 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
         print("Criticalities were reset. Assumption 1 may not have been satisfied in this file")
         sys.exit()
     
-    runtimes, seeds = run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, do_recursive_DP, debug, do_forward)
+    runtimes, seeds, payoffs_by_algorithim= run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, do_recursive_DP, debug, do_forward)
     payoffs = []
     for seed_set in seeds:
         if seed_set == '-':
@@ -215,7 +215,7 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
         max_degree, max_height = get_max_degree_and_height(tree_case_graph)
         
     # save to excel. Also provides unique ID for each row to a test can be ran again
-    view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, max_degree, max_height, seeds[6])
+    view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, payoffs_by_algorithim, max_degree, max_height, seeds[6])
     
     # plot the different graphs
     if plot_graphs:
@@ -371,7 +371,7 @@ def run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, 
     runtimes[5] = stop - start
     payoffs[5] = payoff_simple_greedy
     seeds[5] = bipartite_simple_greedy_seeds
-    print("Bipartite Greedy payoff: ", payoff_greedy)
+    print("Bipartite Simple Greedy payoff: ", payoff_simple_greedy)
 
 
     # run bipartite greedy algorithm
@@ -400,9 +400,10 @@ def run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, 
     runtimes[0] = stop - start
     payoffs[0] = payoff_random
     seeds[0] = random_seeds
+    print("Random selection payoff: ", payoff_random)
 
 
-    return runtimes, seeds
+    return runtimes, seeds, payoffs
 
 def intersection(lst1, lst2):
     lst3 = [value for value in lst1 if value in lst2]
@@ -494,7 +495,7 @@ def get_max_degree_and_height(G):
 #         sys.exit()
 
 # test_if_saved_graphs_same("100","5","0.5","True","True")
-# test_new_file("20","2","0.5","True","True","True")
+# test_new_file("150","5","0.75","True","True","True")
 # test_new_file("40","2","1","True","True")
 # retest_old_file("BA/150/76", "True","True","True")
 # plt.show()

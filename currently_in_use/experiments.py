@@ -1,18 +1,21 @@
 import driver
 
 def main():
-    node_sizes = ["500", "1000", "2000"] # ["150", "500", "1000", "2000"]
-    possible_k = ["10","20","50"] # ["5","10","20","50"]
-    possible_criticalities = ["0.5", "0.5", "0.5"] # ["0.5", "0.5", "0.5", "0.5"]
-    do_remove_cycles = "True"
-    do_assumption_1 = "True"
+    node_sizes = ["500", "1000", "2000", "5000"] # ["150", "500", "1000", "2000"]
+    possible_k = ["10","20","50","100"] # ["5","10","20","50"]
+    possible_criticalities = ["0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
 
-    runs = 50
+    do_remove_cycles = "False"
+    do_assumption_1 = "False"
 
-    for num_nodes, k, criticality in zip(node_sizes, possible_k, possible_criticalities):
-        for i in range(runs):
-            print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
-            driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
+    runs = 25
+
+    for criticality in possible_criticalities:
+        for size in node_sizes:
+            for k in possible_k:
+                for i in range(runs):
+                    print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
+                    driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
 
 def test():
     graph_types = ["BA"]
@@ -29,6 +32,16 @@ def test():
                 # if filename[:3] != "BA/":
                 driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
 
+def practice():
+    num_nodes = "500"
+    k = "10"
+    criticality = "0.5"
+    do_remove_cycles = "False"
+    do_assumption_1 = "False"
+
+    for i in range(6):
+        print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
+        driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
 def retest_all_ER_WS():
     graph_types = ["ER","WS"]
     offset = [2,3]
@@ -71,4 +84,4 @@ def retest_BA():
                 # if filename[:3] != "BA/":
                 driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
 
-retest_BA()
+practice()
