@@ -11,7 +11,7 @@ def main():
     runs = 25
 
     for criticality in possible_criticalities:
-        for size in node_sizes:
+        for num_nodes in node_sizes:
             for k in possible_k:
                 for i in range(runs):
                     print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
@@ -84,4 +84,5 @@ def retest_BA():
                 # if filename[:3] != "BA/":
                 driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
 
-practice()
+# practice()
+main()

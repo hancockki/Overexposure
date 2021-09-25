@@ -497,7 +497,7 @@ def get_max_degree_and_height(G):
 # test_if_saved_graphs_same("100","5","0.5","True","True")
 # test_new_file("150","5","0.75","True","True","True")
 # test_new_file("40","2","1","True","True")
-# retest_old_file("BA/150/76", "True","True","True")
+retest_old_file("0.5/BA/500/20/139.txt", "True","True","True")
 # plt.show()
 
 # '''
