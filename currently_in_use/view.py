@@ -84,10 +84,15 @@ The format used here is described in create_graph_from_file class
     c -> criticality (used for show purposes and creating cluster)
 '''
 def save_original(O, c, k, graph_type, ID, remove_cycles, assumption_1):
-    if O.number_of_nodes() in SPECIFIC_NODE_VALS and c in SPECIFIC_C_VALS and k in SPECIFIC_K_VALS:
-        filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + str(c) + "/" + graph_type + "/" + str(O.number_of_nodes()) + "/" + str(k) + "/" + ID + ".txt"
+    if O.number_of_nodes() in SPECIFIC_NODE_VALS:
+        filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + graph_type + "/" + str(O.number_of_nodes()) + "/" + ID + ".txt"
     else:
-        filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + "other/" + "c" + str(c) + "_" + graph_type +"_size" + str(O.number_of_nodes()) + "_k" + str(k) + "_" + ID + ".txt"
+        filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + graph_type + "/other/" + ID + ".txt"
+    # save file when generating individual graphs for all combos
+    # if O.number_of_nodes() in SPECIFIC_NODE_VALS and c in SPECIFIC_C_VALS and k in SPECIFIC_K_VALS:
+    #     filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + str(c) + "/" + graph_type + "/" + str(O.number_of_nodes()) + "/" + str(k) + "/" + ID + ".txt"
+    # else:
+    #     filename = FILE_DIRECTORY_PREFIX + FL_PREFIX + "other/" + "c" + str(c) + "_" + graph_type +"_size" + str(O.number_of_nodes()) + "_k" + str(k) + "_" + ID + ".txt"
     # if remove_cycles == "false" or remove_cycles == "False" or remove_cycles == "0":
     #     remove_cycles = 0
     # else:

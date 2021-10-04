@@ -146,7 +146,7 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
             max_degree, max_height = get_max_degree_and_height(tree_case_graph)
         
         # save to excel. Also provides unique ID for each row to a test can be ran again
-        view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, payoffs_by_algorithim, max_degree, max_height, seeds[6])
+        view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, payoffs_by_algorithim, max_degree, max_height, seeds[8])
             
         # plot the different graphs
         if plot_graphs:
@@ -166,7 +166,7 @@ def test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1, 
         assumption_one_graph.clear()
         general_graph.clear()
 
-def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumption_1=None, plot_graphs="False", do_debug="False"):
+def retest_old_file(original_graph_filename, k_val=None, do_remove_cycles=None, do_assumption_1=None, plot_graphs="False", do_debug="False"):
     # get all information used to make ID in excel sheet
     if original_graph_filename[-4:] != ".txt":
        original_graph_filename = original_graph_filename + ".txt"
@@ -191,6 +191,8 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
         do_assumption_1 = file_assumption_1
     else:
         do_assumption_1 = string_to_boolean(do_assumption_1)
+    if k_val != None:
+        k = int(k_val)
     
     if do_remove_cycles: print("Remove Cycs: " + str(do_remove_cycles))
     if do_assumption_1: print("Ass 1: " + str(do_assumption_1))
@@ -208,6 +210,9 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
             payoffs.append('-')
         else:
             payoffs.append(calculate_payoff(general_graph, seed_set))
+    
+    print("BSG seeds: ", seeds[5])
+    print("BG seeds: ", seeds[6])
 
     max_degree = "-"
     max_height = "-"
@@ -215,7 +220,7 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
         max_degree, max_height = get_max_degree_and_height(tree_case_graph)
         
     # save to excel. Also provides unique ID for each row to a test can be ran again
-    view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, payoffs_by_algorithim, max_degree, max_height, seeds[6])
+    view.write_results_to_excel([num_nodes, k, criticality, graph_type, location], payoffs, runtimes, payoffs_by_algorithim, max_degree, max_height, seeds[8])
     
     # plot the different graphs
     if plot_graphs:
@@ -236,11 +241,73 @@ def retest_old_file(original_graph_filename, do_remove_cycles=None, do_assumptio
     general_graph.clear()
     O.clear()
 
+def test_file(original_graph_filename, k, appeal, plot_graphs="False", do_debug="False"):
+    print("Retesting " + original_graph_filename)
+    # convert command line args to proper types
+    if original_graph_filename[-4:] != ".txt":
+       original_graph_filename = original_graph_filename + ".txt"
+    plot_graphs = string_to_boolean(plot_graphs)
+    debug = string_to_boolean(do_debug)
+    k = int(k)
+    appeal = float(appeal)
+    location = FILE_LOCATION_PREFIX + original_graph_filename
+
+    # getting info from file. Ignore all values except O graph
+    file_k, file_appeal, graph_type, ID, file_remove_cycles, file_assumption_1, O = cff.create_from_file(location)
+    num_nodes = O.number_of_nodes()
+
+    # restrictions on running algorithms (due to run time)
+    do_recursive_DP = False
+    if num_nodes < 200:
+        do_recursive_DP = True
+    do_forward = False
+    if num_nodes < 2000:
+        do_forward = True
+
+    # create cluster and bipartite based on information from file
+    tree_case_graph, assumption_one_graph, general_graph, loops_through_while = graph_creation.generate_test_graphs(O, appeal)
+    if loops_through_while != 1:
+        print("Criticalities were reset. Assumption 1 may not have been satisfied in this file")
+        sys.exit()
     
-    # # DONT SAVE FILE HERE BECAUSE DO NOT WANT TO OVERWRITE!
-    # # wq: should a method be made to compare two graphs and see if they are (relativley) the same?
-    # view.save_original(O, criticality, k, ID, do_remove_cycles, do_assumption_1)
-    # view.save_cluster(C, k, criticality, ID, do_remove_cycles, do_assumption_1)     
+    # run tests and calculate payoffs
+    runtimes, seeds, payoffs_by_algorithim= run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, do_recursive_DP, debug, do_forward)
+    payoffs = []
+    for seed_set in seeds:
+        if seed_set == '-':
+            payoffs.append('-')
+        else:
+            payoffs.append(calculate_payoff(general_graph, seed_set))
+    
+    # print("BSG seeds: ", seeds[5])
+    # print("BG seeds: ", seeds[6])
+
+    max_degree = "-"
+    max_height = "-"
+    if O.number_of_nodes() < 1000:
+        max_degree, max_height = get_max_degree_and_height(tree_case_graph)
+        
+    # save to excel. Also provides unique ID for each row to a test can be ran again
+    view.write_results_to_excel([num_nodes, k, appeal, graph_type, location], payoffs, runtimes, payoffs_by_algorithim, max_degree, max_height, seeds[8])
+    
+    # plot the different graphs
+    if plot_graphs:
+        # get error if attempt to plot more than 500 nodes
+        if num_nodes < 500:
+            view.plot_original(O, appeal)
+        if len(tree_case_graph.nodes()) < 500:
+            view.plot_cluster(tree_case_graph, graph_type + " tree cluster graph")
+        if len(assumption_one_graph.nodes()) < 500:
+            view.plot_cluster(assumption_one_graph, graph_type + " assumption 1 cluster graph")
+        if len(general_graph.nodes()) < 500:
+            view.plot_bipartite(general_graph, graph_type + " general bipartite graph")
+        plt.show()
+    if debug: print(tree_case_graph.edges.data())
+
+    tree_case_graph.clear()
+    assumption_one_graph.clear()
+    general_graph.clear()
+    O.clear() 
 
 '''
 Generate three types of original graphs (Barabasi-Albert, Erdos-Renyi, and Watts-Strogatz) of the same size
@@ -402,7 +469,6 @@ def run_tests_on_graph(tree_case_graph, assumption_one_graph, general_graph, k, 
     seeds[0] = random_seeds
     print("Random selection payoff: ", payoff_random)
 
-
     return runtimes, seeds, payoffs
 
 def intersection(lst1, lst2):
@@ -495,9 +561,13 @@ def get_max_degree_and_height(G):
 #         sys.exit()
 
 # test_if_saved_graphs_same("100","5","0.5","True","True")
-# test_new_file("150","5","0.75","True","True","True")
+# test_new_file("500","10","0.5","False","False","False")
 # test_new_file("40","2","1","True","True")
-retest_old_file("0.5/BA/500/20/139.txt", "True","True","True")
+# retest_old_file("0.5/BA/500/20/139.txt", "True","True","True")
+
+
+# retest_old_file("0.5/BA/500/10/37.txt", "False","False","False")
+# retest_old_file("0.5/BA/500/10/73.txt", "False","False","False")
 # plt.show()
 
 # '''

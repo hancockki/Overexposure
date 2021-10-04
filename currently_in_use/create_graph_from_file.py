@@ -118,13 +118,21 @@ def create_from_file(filename):
     if lines[0] == CLUSTER:
         return create_cluster(lines[1:])
     elif lines[0] == ORIGINAL:
-        k = int(re.split(" ", lines[1])[1])
-        crit = float(re.split(" ", lines[2])[1])
-        graph_type = re.split(" ", lines[3])[1]
-        ID = re.split(" ", lines[4])[1]
-        remove_cycles = bool(int(re.split(" ", lines[5])[1]))
-        assumption_1 = bool(int(re.split(" ", lines[6])[1]))
-        return k, crit, graph_type, ID, remove_cycles, assumption_1, create_original(lines[7:])
+        if re.split(" ", lines[1])[1] != "n/a":
+            k = int(re.split(" ", lines[1])[1])
+            appeal = float(re.split(" ", lines[2])[1])
+            graph_type = re.split(" ", lines[3])[1]
+            ID = re.split(" ", lines[4])[1]
+            remove_cycles = bool(int(re.split(" ", lines[5])[1]))
+            assumption_1 = bool(int(re.split(" ", lines[6])[1]))
+        else:
+            k = None
+            appeal = None
+            graph_type = re.split(" ", lines[3])[1]
+            ID = re.split(" ", lines[4])[1]
+            remove_cycles = None
+            assumption_1 = None
+        return k, appeal, graph_type, ID, remove_cycles, assumption_1, create_original(lines[7:])
 
 '''
 Creates an original graph based on content of file. Will ignore comments marked with a '#'

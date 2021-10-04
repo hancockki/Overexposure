@@ -126,7 +126,7 @@ cluster picked and rejecting nodes it is connected to after picking
 (to avoid double counting)
 """
 def greedy_selection(G, k, debug):
-    max_weight = 0
+    max_weight =-float("inf")
     max_weight_node = None
     total_payoff = 0
     seed_set = []
@@ -164,7 +164,7 @@ def greedy_selection(G, k, debug):
             #print("Num edges: ", num_neg, " Max weight node: ", max_weight_node)
             #G.remove_node(max_weight_node)
             total_payoff += max_weight
-        max_weight = 0
+        max_weight = -float("inf")
         rej_nodes = set()
         max_weight_node = None
     if debug: print("Payoff greedy bipartite: ", total_payoff)

@@ -1,88 +1,142 @@
 import driver
+import view
+import sys
+FL_PREFIX = "test_files/"
+FILE_DIRECTORY_PREFIX = "currently_in_use/"
 
-def main():
-    node_sizes = ["500", "1000", "2000", "5000"] # ["150", "500", "1000", "2000"]
-    possible_k = ["10","20","50","100"] # ["5","10","20","50"]
-    possible_criticalities = ["0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
+def is_ID_reset():
+    filename = FILE_DIRECTORY_PREFIX + "ID_tracker.txt"
+    file = open(filename, 'r')
+    # get current ID that is recorded in file
+    if file.mode == 'r':
+        ID = file.read()
 
-    do_remove_cycles = "False"
-    do_assumption_1 = "False"
+    return ID == "1"
 
-    runs = 25
+def generate_and_save_graphs(node_sizes, runs, m=2,p=0.2):
+    if not is_ID_reset():
+        do_stop = input("The ID counter is not reset, is this intentional? Data may be overwritten if you continue. Enter [Y] or [N]: ")
+        if do_stop == "Y":
+            sys.exit()
+    for num_nodes in node_sizes:
+        for i in range(runs):
+            original_graphs, original_types = driver.generate_original_graphs(num_nodes, m, p)
+            for O, graph_type in zip(original_graphs, original_types):
+                ID = view.generate_ID()
+                location = view.save_original(O, "n/a", "n/a", graph_type, ID, "n/a", "n/a")
 
-    for criticality in possible_criticalities:
-        for num_nodes in node_sizes:
-            for k in possible_k:
-                for i in range(runs):
-                    print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
-                    driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
-
-def test():
-    graph_types = ["BA"]
-    offset = [1]
-    node_size = ["150"]
-    do_remove_cycles = "False"
-    do_assumption_1 = "False"
-
-    for graph, ID_off in zip(graph_types, offset):
-        for size_offset, size in enumerate(node_size):
-            size_offset = 0
-            for i in range(50):
-                filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
-                # if filename[:3] != "BA/":
-                driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
-
-def practice():
-    num_nodes = "500"
-    k = "10"
-    criticality = "0.5"
-    do_remove_cycles = "False"
-    do_assumption_1 = "False"
-
-    for i in range(6):
-        print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
-        driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
-def retest_all_ER_WS():
-    graph_types = ["ER","WS"]
-    offset = [2,3]
-    node_size = ["150", "500", "1000", "2000"]
-    do_remove_cycles = "False"
-    do_assumption_1 = "False"
-
-    for graph, ID_off in zip(graph_types, offset):
-        for size_offset, size in enumerate(node_size):
-            for i in range(50):
-                filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
-                # if filename[:3] != "BA/":
-                driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
-
-def retest_all_files():
+def test_dif_combos(node_sizes, runs, k_vals, appeals):
     graph_types = ["BA","ER","WS"]
     offset = [1,2,3]
-    node_size = ["150", "500", "1000", "2000"]
-    do_remove_cycles = "False"
-    do_assumption_1 = "False"
 
     for graph, ID_off in zip(graph_types, offset):
-        for size_offset, size in enumerate(node_size):
-            for i in range(50):
-                filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
-                # if filename[:3] != "BA/":
-                driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+        for appeal in appeals:
+            for num_nodes_offset, num_nodes in enumerate(node_sizes):
+                for k in k_vals:
+                    for i in range(runs):
+                        filename = graph + "/" + str(num_nodes) + "/" + str((num_nodes_offset * runs * 3) + (i * 3) + ID_off)
+                        driver.test_file(filename, k, appeal)
 
-def retest_BA():
-    graph_types = ["BA"]
-    offset = [1]
-    node_size = ["150", "500", "1000", "2000"]
-    do_remove_cycles = "False"
-    do_assumption_1 = "False"
+def main():
+    node_sizes = [500, 1000, 2000, 5000] # ["500", "1000", "2000", "5000"] | ["150", "500", "1000", "2000"]
+    k_vals = ["10","20","50","100"] # ["5","10","20","50"]
+    appeals = ["0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
+    runs = 25
 
-    for graph, ID_off in zip(graph_types, offset):
-        for size_offset, size in enumerate(node_size):
-            for i in range(50):
-                filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
-                # if filename[:3] != "BA/":
-                driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+    m = 2
+    p = 0.2
 
-# practice()
+    if not is_ID_reset():
+        do_gen = input("Do you want to generate new files? Enter [Y] or [N]: ")
+        if do_gen == "Y":
+            generate_and_save_graphs(node_sizes, runs, m=2,p=0.2)
+    test_dif_combos(node_sizes, runs, k_vals, appeals)
+
 main()
+
+# # the functions below were lazy ways to generate and test programs, relying on generation while testing
+# def generate_all_possible_combos():
+#     node_sizes = ["500", "1000", "2000", "5000"] # ["150", "500", "1000", "2000"]
+#     possible_k = ["10","20","50","100"] # ["5","10","20","50"]
+#     possible_criticalities = ["0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
+
+#     do_remove_cycles = "False"
+#     do_assumption_1 = "False"
+
+#     runs = 25
+
+#     for criticality in possible_criticalities:
+#         for num_nodes in node_sizes:
+#             for k in possible_k:
+#                 for i in range(runs):
+#                     print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
+#                     driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
+
+# def test():
+#     graph_types = ["BA"]
+#     offset = [1]
+#     node_size = ["150"]
+#     do_remove_cycles = "False"
+#     do_assumption_1 = "False"
+
+#     for graph, ID_off in zip(graph_types, offset):
+#         for size_offset, size in enumerate(node_size):
+#             size_offset = 0
+#             for i in range(50):
+#                 filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
+#                 # if filename[:3] != "BA/":
+#                 driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+
+# def practice():
+#     num_nodes = "500"
+#     k = "10"
+#     criticality = "0.5"
+#     do_remove_cycles = "False"
+#     do_assumption_1 = "False"
+
+#     for i in range(6):
+#         print("RUN " + str(i) + ": " + str(num_nodes) + " " + str(k) + " " + str(criticality))
+#         driver.test_new_file(num_nodes, k, criticality, do_remove_cycles, do_assumption_1)
+# def retest_all_ER_WS():
+#     graph_types = ["ER","WS"]
+#     offset = [2,3]
+#     node_size = ["150", "500", "1000", "2000"]
+#     do_remove_cycles = "False"
+#     do_assumption_1 = "False"
+
+#     for graph, ID_off in zip(graph_types, offset):
+#         for size_offset, size in enumerate(node_size):
+#             for i in range(50):
+#                 filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
+#                 # if filename[:3] != "BA/":
+#                 driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+
+# def retest_all_files():
+#     graph_types = ["BA","ER","WS"]
+#     offset = [1,2,3]
+#     node_size = ["150", "500", "1000", "2000"]
+#     do_remove_cycles = "False"
+#     do_assumption_1 = "False"
+
+#     for graph, ID_off in zip(graph_types, offset):
+#         for size_offset, size in enumerate(node_size):
+#             for i in range(50):
+#                 filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
+#                 # if filename[:3] != "BA/":
+#                 driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+
+# def retest_BA():
+#     graph_types = ["BA"]
+#     offset = [1]
+#     node_size = ["150", "500", "1000", "2000"]
+#     do_remove_cycles = "False"
+#     do_assumption_1 = "False"
+
+#     for graph, ID_off in zip(graph_types, offset):
+#         for size_offset, size in enumerate(node_size):
+#             for i in range(50):
+#                 filename = graph + "/" + size + "/" + str((size_offset * 150) + (i * 3) + ID_off)
+#                 # if filename[:3] != "BA/":
+#                 driver.retest_old_file(filename, do_remove_cycles, do_assumption_1)
+
+# # practice()
