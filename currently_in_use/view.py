@@ -163,7 +163,7 @@ def generate_ID():
     return ID
 
 """ Write results to an excel sheet stored in the currently_in_use/tests folder """
-def write_results_to_excel(preamble, payoffs, runtimes, payoffs_by_algorithim, max_degree, max_height, opt_seeds):
+def write_results_to_excel(preamble, payoffs, relative_results, max_degree, max_height, opt_seeds):
     # print(preamble)
     # print(payoffs)
     # print(runtimes)
@@ -171,9 +171,8 @@ def write_results_to_excel(preamble, payoffs, runtimes, payoffs_by_algorithim, m
     print("WRITING RESULTS")
     sheets = wb.sheetnames
     general_payoff_sheet = wb[sheets[0]]
-    payoffs_by_algorithim_sheet = wb[sheets[1]]
-    runtime_sheet = wb[sheets[2]]
     general_payoff_sheet.append(preamble + payoffs + [max_degree] + [max_height] + opt_seeds)
-    payoffs_by_algorithim_sheet.append(preamble + payoffs_by_algorithim + [max_degree] + [max_height] + opt_seeds)
-    runtime_sheet.append(preamble + runtimes)
+    for i, result in enumerate(relative_results):
+        sheet = wb[sheets[i + 1]]
+        sheet.append(preamble + result)
     wb.save(FILE_DIRECTORY_PREFIX + 'Experimental_Results.xlsx')

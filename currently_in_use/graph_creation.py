@@ -77,13 +77,16 @@ def generate_test_graphs(O, threshold):
     # cluster graph satisfy assumption 1. used for assumption one algorithms
     statisfy_assumption_one(B)
     C_sat_assume_one = create_cluster_from_bipartite(B)
+    B_sat_assume_one = create_bipartite_from_cluster(C_sat_assume_one)
 
     # remove cycles and satisfy assumption 1 (never need to node sat ass 1 if removing cycles) used for tree algorithms
     C_remove_cyc = C_sat_assume_one.copy()
     remove_cycles(C_remove_cyc)
+    B_remove_cyc = create_bipartite_from_cluster(C_remove_cyc)
     rejectingNodeDict.clear()
     B.clear()
-    return C_remove_cyc, C_sat_assume_one, unmodified_B, count
+    C.clear()
+    return C_remove_cyc, B_remove_cyc, C_sat_assume_one, B_sat_assume_one, unmodified_B, count
 
 """
 From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled

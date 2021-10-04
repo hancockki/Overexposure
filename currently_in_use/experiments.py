@@ -1,6 +1,9 @@
 import driver
 import view
 import sys
+import graph_creation
+import create_graph_from_file as cff
+import networkx as nx
 FL_PREFIX = "test_files/"
 FILE_DIRECTORY_PREFIX = "currently_in_use/"
 
@@ -37,22 +40,57 @@ def test_dif_combos(node_sizes, runs, k_vals, appeals):
                         filename = graph + "/" + str(num_nodes) + "/" + str((num_nodes_offset * runs * 3) + (i * 3) + ID_off)
                         driver.test_file(filename, k, appeal)
 
+def get_cluster_data():
+    filename = graph + "/" + str(num_nodes) + "/" + str((num_nodes_offset * runs * 3) + (i * 3) + ID_off)
+    file_k, file_appeal, graph_type, ID, file_remove_cycles, file_assumption_1, O = cff.create_from_file(location)
+    C = graph_creation.create_cluster_graph(O, threshold)
+    B = create_bipartite_from_cluster(C)
+
+    print("File: " + filename)
+    cluster_occurance = dict()
+    for i in range(runs):
+        for node in B.nodes():
+            if B.nodes[node]['bipartite'] == 0:
+                weight = B.nodes[node]['weight']
+                if weight in cluster_occurance.keys():
+                    cluster_occurance[weight] = cluster_occurance[weight] + 1
+                else:
+                    cluster_occurance[weight] = 1
+    print(cluster_occurance)
+    B.clear()
+    C.clear()
+
+# def get_all_cluster_data():
+#     node_sizes = [5000]
+#     runs = 25
+#     graph_types = ["BA","ER","WS"]
+#     offset = [1,2,3]
+
+#     cluster_dicts_by_graph = []
+#     for i in offset:
+#         cluster_dicts_by_graph.append(dict())
+#     for graph, ID_off in zip(graph_types, offset):
+#         for num_nodes_offset, num_nodes in enumerate(node_sizes):
+                
+
 def main():
     node_sizes = [500, 1000, 2000, 5000] # ["500", "1000", "2000", "5000"] | ["150", "500", "1000", "2000"]
     k_vals = ["10","20","50","100"] # ["5","10","20","50"]
-    appeals = ["0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
+    appeals = ["0.25","0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
     runs = 25
 
     m = 2
     p = 0.2
 
-    if not is_ID_reset():
-        do_gen = input("Do you want to generate new files? Enter [Y] or [N]: ")
-        if do_gen == "Y":
-            generate_and_save_graphs(node_sizes, runs, m=2,p=0.2)
+    # if not is_ID_reset():
+    #     do_gen = input("Do you want to generate new files? Enter [Y] or [N]: ")
+    #     if do_gen == "Y":
+    #         generate_and_save_graphs(node_sizes, runs, m=2,p=0.2)
     test_dif_combos(node_sizes, runs, k_vals, appeals)
 
 main()
+# get_cluster_data()
+# driver.test_file("1", "5", "0.5")
 
 # # the functions below were lazy ways to generate and test programs, relying on generation while testing
 # def generate_all_possible_combos():
