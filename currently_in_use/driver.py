@@ -394,10 +394,10 @@ def tree_tests(cluster, bipartite, payoffs, seeds, runtimes, k, debug, do_recurs
     start = timeit.default_timer()
     payoff_knapsack, seedset = tree_case.knapsack(cluster, cluster.number_of_nodes(), k)
     stop = timeit.default_timer()
-    # if payoff is less than 0, best to not pick any seeds
-    if payoff_knapsack < 0:
-        payoff_knapsack = 0
-        seedset = []
+    # # if payoff is less than 0, best to not pick any seeds
+    # if payoff_knapsack < 0:
+    #     payoff_knapsack = 0
+    #     seedset = []
     runtimes[1] = stop - start
     payoffs[1] = payoff_knapsack
     if save_seeds: seeds[1] = seedset
@@ -423,10 +423,10 @@ def assumption_one_tests(cluster, bipartite, payoffs, seeds, runtimes, k, debug,
     start = timeit.default_timer()
     payoff_greedy, greedy_seedset = assumption_one_case.kHighestClusters(cluster, k, debug)
     stop = timeit.default_timer()
-    # if payoff is less than 0, best to not pick any seeds
-    if payoff_greedy < 0:
-        payoff_greedy = 0
-        greedy_seedset = []
+    # # if payoff is less than 0, best to not pick any seeds
+    # if payoff_greedy < 0:
+    #     payoff_greedy = 0
+    #     greedy_seedset = []
     runtimes[3] = stop - start
     payoffs[3] = payoff_greedy
     if save_seeds: seeds[3] = greedy_seedset
@@ -448,14 +448,14 @@ def general_tests(bipartite, payoffs, seeds, runtimes, k, debug, do_recursive_DP
     # all general test cases (no restrictions)
     print("\nDoing General Algorithms")
     
-    # run bipartite random selection
-    start = timeit.default_timer()
-    payoff_random, random_seeds = general_case.random_selection(bipartite, k, debug)
-    stop = timeit.default_timer()
-    runtimes[0] = stop - start
-    payoffs[0] = payoff_random
-    if save_seeds: seeds[0] = random_seeds
-    print("Random selection payoff: ", payoff_random)
+    # # run bipartite random selection
+    # start = timeit.default_timer()
+    # payoff_random, random_seeds = general_case.random_selection(bipartite, k, debug)
+    # stop = timeit.default_timer()
+    # runtimes[0] = stop - start
+    # payoffs[0] = payoff_random
+    # if save_seeds: seeds[0] = random_seeds
+    # print("Random selection payoff: ", payoff_random)
     
     # run bipartite simple greedy algorithm
     start = timeit.default_timer()
@@ -471,7 +471,8 @@ def general_tests(bipartite, payoffs, seeds, runtimes, k, debug, do_recursive_DP
     
     # run bipartite greedy algorithm
     start = timeit.default_timer()
-    payoff_greedy, bipartite_greedy_seeds = general_case.greedy_selection(bipartite, k, debug)
+    # payoff_greedy, bipartite_greedy_seeds = general_case.greedy_selection(bipartite, k, debug)
+    payoff_greedy, bipartite_greedy_seeds = general_case.greedy_selection_graph_implementation(bipartite, k, debug)
     stop = timeit.default_timer()
     runtimes[6] = stop - start
     payoffs[6] = payoff_greedy
@@ -481,7 +482,8 @@ def general_tests(bipartite, payoffs, seeds, runtimes, k, debug, do_recursive_DP
     if do_forward:
         # run bipartite forward thinking algorithm
         start = timeit.default_timer()
-        payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy(bipartite, k, debug)
+        # payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy(bipartite, k, debug)
+        payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy_graph_implementation(bipartite, k, debug)
         stop = timeit.default_timer()
         runtimes[7] = stop - start
         payoffs[7] = payoff_forward_thinking
@@ -595,6 +597,9 @@ def get_max_degree_and_height(G):
 
 # retest_old_file("0.5/BA/500/10/37.txt", "False","False","False")
 # retest_old_file("0.5/BA/500/10/73.txt", "False","False","False")
+
+test_file("BA/500/31.txt", "10", "0.5")
+
 # plt.show()
 
 # '''
