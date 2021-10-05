@@ -100,5 +100,5 @@ def lp_setup(G, k, debug):
         if value(var) == 1 and var.name[0] == 'N':
             if debug: print(var, "=", value(var))
             seed_set.append(int(var.name[6:]))
-    print("OPT LP=", value(prob.objective))
+    if debug: print("OPT LP=", value(prob.objective))
     return value(prob.objective), seed_set
