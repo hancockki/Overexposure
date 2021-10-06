@@ -377,7 +377,7 @@ def run_tests_on_graph(tree_case_cluster, tree_case_bipartite, assumption_one_cl
     # trivial. take node.
     if len(tree_case_cluster.nodes()) == 1:
         for i in range(9):
-            if i != 2 and != 0:
+            if i != 2 and i != 0:
                 weight = tree_case_cluster.nodes[0]['weight']
                 relative_payoff_tree[i] = weight
                 relative_payoff_ass_1[i] = weight
@@ -612,7 +612,7 @@ def get_max_degree_and_height(G):
 # retest_old_file("0.5/BA/500/10/73.txt", "False","False","False")
 
 # test_file("BA/5000/298.txt", "10", "0.5")
-test_file("WS/500/12.txt", "10", "0.75")
+# test_file("WS/500/12.txt", "10", "0.75")
 # plt.show()
 
 # '''
