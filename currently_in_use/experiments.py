@@ -30,13 +30,13 @@ def generate_and_save_graphs(node_sizes, runs, m=2,p=0.2):
                 ID = view.generate_ID()
                 location = view.save_original(O, "n/a", "n/a", graph_type, ID, "n/a", "n/a")
 
-def test_dif_combos(node_sizes, runs, k_vals, appeals):
-    graph_types = ["WS"] # ["BA","ER",
-    offset = [3] # [1,2,
+def test_dif_combos(node_sizes, node_offset, runs, k_vals, appeals):
+    graph_types = ["BA","ER","WS"]
+    offset = [1,2,3]
 
     for graph, ID_off in zip(graph_types, offset):
         for appeal in appeals:
-            for num_nodes_offset, num_nodes in enumerate(node_sizes):
+            for num_nodes_offset, num_nodes in zip(node_offset, node_sizes):
                 for k in k_vals:
                     for i in range(runs):
                         filename = graph + "/" + str(num_nodes) + "/" + str((num_nodes_offset * runs * 3) + (i * 3) + ID_off)
@@ -143,9 +143,10 @@ def histogram_data_collection(node_sizes, runs, appeals):
     record_occurences_of_cluster_sizes(node_sizes, runs, appeals)
 
 def main():
-    node_sizes = [500, 1000, 2000, 5000] # ["500", "1000", "2000", "5000"] | ["150", "500", "1000", "2000"]
+    node_sizes = [5000] # ["500", "1000", "2000", "5000"] | ["150", "500", "1000", "2000"]
+    node_offset = [3]
     k_vals = ["10","20","50","100"] # ["5","10","20","50"]
-    appeals = ["0.75"] # ["0.5", "0.5", "0.5", "0.5"]
+    appeals = ["0.25", "0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
     runs = 25
 
     m = 2
@@ -156,7 +157,7 @@ def main():
     #     if do_gen == "Y":
     #         generate_and_save_graphs(node_sizes, runs, m=2,p=0.2)
 
-    test_dif_combos(node_sizes, runs, k_vals, appeals)
+    test_dif_combos(node_sizes, node_offset, runs, k_vals, appeals)
 
     # histogram_data_collection([5000], runs, appeals)
 

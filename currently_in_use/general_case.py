@@ -237,19 +237,27 @@ def forward_thinking_greedy_graph_implementation(G, k):
                 neg_nodes1.add(edge[0])
             #get weight of the first node we are picking
             weight = value1
-            for node2_index in range(node1_index + 1, len(clusters)):
-                node2 = clusters[node2_index]
-                value2 = record_graph.nodes[node2]['weight']
-                if value2 < 0:
-                    continue
-                neg_nodes2 = set()
-                for edge in record_graph.in_edges(node2):
-                    neg_nodes2.add(edge[0])
-                weight2 = value2
-                weight_total = weight + weight2 - len(neg_nodes1.union(neg_nodes2))
+
+            # make sure consider the last cluster
+            if node1_index == len(clusters) - 1:
+                weight_total = weight - len(neg_nodes1)
                 if weight_total > max_weight:
                     max_weight = weight_total
                     max_weight_node = node1
+            else:
+                for node2_index in range(node1_index + 1, len(clusters)):
+                    node2 = clusters[node2_index]
+                    value2 = record_graph.nodes[node2]['weight']
+                    if value2 < 0:
+                        continue
+                    neg_nodes2 = set()
+                    for edge in record_graph.in_edges(node2):
+                        neg_nodes2.add(edge[0])
+                    weight2 = value2
+                    weight_total = weight + weight2 - len(neg_nodes1.union(neg_nodes2))
+                    if weight_total > max_weight:
+                        max_weight = weight_total
+                        max_weight_node = node1
         if max_weight_node is not None: #we picked a node
             rej_nodes = [edge[0] for edge in record_graph.in_edges(max_weight_node)]
             total_payoff += record_graph.nodes[max_weight_node]['weight'] - len(rej_nodes)
