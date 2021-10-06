@@ -104,10 +104,10 @@ def create_cluster_graph(O, threshold):
             accepting_in_cluster, rejecting_in_cluster = label_cluster(O, node_ID, clusterCount, threshold)
             make_cluster_node(G_cluster, clusterCount, accepting_in_cluster)
             clusterCount += 1
-    # cannot have a cluster graph with no edges... ? (wq:try to understand this later)
-    if len(G_cluster.nodes()) < 2:
-        print("Less than 3 nodes in cluster graph")
-        return False
+    # # cannot have a cluster graph with no edges... ? (wq:try to understand this later)
+    # if len(G_cluster.nodes()) < 2:
+    #     print("Less than 3 nodes in cluster graph")
+    #     return False
     
     # decrement the cluster weight by the number of rejecting nodes that are exclusive to a cluster
     # wq:compare output of cluster graph from NIC code to this, to see if the same and more efficient?
@@ -437,6 +437,12 @@ to the cluster(s) it is connected to.
 """
 def create_bipartite_from_cluster(C):
     B = nx.DiGraph()
+    if len(C.nodes()) == 1:
+        B.add_node(0)
+        B.nodes[0]['weight'] = C.nodes[0]['weight']
+        B.nodes[0]['bipartite'] = 0
+        return B
+
     #look at every edge in the cluster graph and create nodes in bipartite
     for edge in C.edges.data():
         #check if either endpoint of the edge has been added to the bipartite

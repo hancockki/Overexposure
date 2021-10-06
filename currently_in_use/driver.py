@@ -373,6 +373,20 @@ def run_tests_on_graph(tree_case_cluster, tree_case_bipartite, assumption_one_cl
         relative_runtimes_ass_1.append('-')
         relative_runtimes_general.append('-')
         seeds.append('-')
+
+    # trivial. take node.
+    if len(tree_case_cluster.nodes()) == 1:
+        for i in range(9):
+            if i != 2 and != 0:
+                weight = tree_case_cluster.nodes[0]['weight']
+                relative_payoff_tree[i] = weight
+                relative_payoff_ass_1[i] = weight
+                relative_payoff_general[i] = weight
+                relative_runtimes_tree[i] = 0
+                relative_runtimes_ass_1[i] = 0
+                relative_runtimes_general[i] = 0
+                seeds[i] = ([0])
+        return [relative_payoff_tree, relative_payoff_ass_1, relative_payoff_general, relative_runtimes_tree, relative_runtimes_ass_1, relative_runtimes_general], seeds
     
     print("Testing on tree graphs")
     tree_tests(tree_case_cluster, tree_case_bipartite, relative_payoff_tree, seeds, relative_runtimes_tree, k, debug, do_recursive_DP, do_forward, True)
@@ -598,7 +612,7 @@ def get_max_degree_and_height(G):
 # retest_old_file("0.5/BA/500/10/73.txt", "False","False","False")
 
 # test_file("BA/5000/298.txt", "10", "0.5")
-# test_file("BA/500/31.txt", "10", "0.5")
+test_file("WS/500/12.txt", "10", "0.75")
 # plt.show()
 
 # '''

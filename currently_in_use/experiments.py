@@ -4,6 +4,8 @@ import sys
 import graph_creation
 import create_graph_from_file as cff
 import networkx as nx
+import openpyxl
+import re
 FL_PREFIX = "test_files/"
 FILE_DIRECTORY_PREFIX = "currently_in_use/"
 
@@ -29,8 +31,8 @@ def generate_and_save_graphs(node_sizes, runs, m=2,p=0.2):
                 location = view.save_original(O, "n/a", "n/a", graph_type, ID, "n/a", "n/a")
 
 def test_dif_combos(node_sizes, runs, k_vals, appeals):
-    graph_types = ["BA","ER","WS"]
-    offset = [1,2,3]
+    graph_types = ["WS"] # ["BA","ER",
+    offset = [3] # [1,2,
 
     for graph, ID_off in zip(graph_types, offset):
         for appeal in appeals:
@@ -40,43 +42,110 @@ def test_dif_combos(node_sizes, runs, k_vals, appeals):
                         filename = graph + "/" + str(num_nodes) + "/" + str((num_nodes_offset * runs * 3) + (i * 3) + ID_off)
                         driver.test_file(filename, k, appeal)
 
-def get_cluster_data():
-    filename = graph + "/" + str(num_nodes) + "/" + str((num_nodes_offset * runs * 3) + (i * 3) + ID_off)
-    file_k, file_appeal, graph_type, ID, file_remove_cycles, file_assumption_1, O = cff.create_from_file(location)
-    C = graph_creation.create_cluster_graph(O, threshold)
-    B = create_bipartite_from_cluster(C)
+def get_all_possible_cluster_sizes(node_sizes, runs, appeals):
+    graph_types = ["BA","ER","WS"]
+    offset = [1,2,3]
+    
+    possible_cluster_sizes = set()
+    for graph, ID_off in zip(graph_types, offset):
+        for appeal in appeals:
+            appeal = float(appeal)
+            for num_nodes_offset, num_nodes in enumerate(node_sizes):
+                num_nodes_offset = 3
+                for i in range(runs):
+                    filename = "test_files/" + graph + "/" + str(num_nodes) + "/" + str((num_nodes_offset * runs * 3) + (i * 3) + ID_off) + ".txt"
+                    print("Opening " + filename)
+                    file_k, file_appeal, graph_type, ID, file_remove_cycles, file_assumption_1, O = cff.create_from_file(filename)
+                    C = graph_creation.create_cluster_graph(O, appeal)
+                    B = graph_creation.create_bipartite_from_cluster(C)
+                    for node in B.nodes():
+                        if B.nodes[node]['bipartite'] == 0:
+                            possible_cluster_sizes.add(B.nodes[node]['weight'])
+                    print("Finished recording clusters for " + filename)
+                    B.clear()
+                    C.clear()
+                    O.clear()
+    possible_cluster_sizes = list(possible_cluster_sizes)
+    possible_cluster_sizes.sort(reverse=True)
+    print("======================================")
+    print("There are " + str(len(possible_cluster_sizes)) + " unique cluster sizes")
 
-    print("File: " + filename)
-    cluster_occurance = dict()
-    for i in range(runs):
-        for node in B.nodes():
-            if B.nodes[node]['bipartite'] == 0:
-                weight = B.nodes[node]['weight']
-                if weight in cluster_occurance.keys():
-                    cluster_occurance[weight] = cluster_occurance[weight] + 1
-                else:
-                    cluster_occurance[weight] = 1
-    print(cluster_occurance)
-    B.clear()
-    C.clear()
+    # record all cluster sizes into a file
+    filename = FILE_DIRECTORY_PREFIX + "all_cluster_sizes.txt"
+    # put number on new line everytime
+    with open(filename, 'w') as write_to_file:
+        for size in possible_cluster_sizes:
+            write_to_file.write(str(size) + "\n")
+    print("Finished recording in file")
 
-# def get_all_cluster_data():
-#     node_sizes = [5000]
-#     runs = 25
-#     graph_types = ["BA","ER","WS"]
-#     offset = [1,2,3]
+def record_occurences_of_cluster_sizes(node_sizes, runs, appeals):
+    file = open(FILE_DIRECTORY_PREFIX + "all_cluster_sizes.txt","r")
+    if file.mode == 'r':
+        contents = file.read()
+    lines = re.split("\n", contents)
+    file.close()
 
-#     cluster_dicts_by_graph = []
-#     for i in offset:
-#         cluster_dicts_by_graph.append(dict())
-#     for graph, ID_off in zip(graph_types, offset):
-#         for num_nodes_offset, num_nodes in enumerate(node_sizes):
-                
+    graph_types = ["BA","ER","WS"]
+    offset = [1,2,3]
+
+    write_header(lines)
+    
+    for graph, ID_off in zip(graph_types, offset):
+        for appeal in appeals:
+            appeal = float(appeal)
+            for num_nodes_offset, num_nodes in enumerate(node_sizes):
+                num_nodes_offset = 3
+                for i in range(runs):
+                    cluster_sizes = reset_dict_from_list_keys(lines)
+                    filename = "test_files/" + graph + "/" + str(num_nodes) + "/" + str((num_nodes_offset * runs * 3) + (i * 3) + ID_off) + ".txt"
+                    print("Opening " + filename)
+                    file_k, file_appeal, graph_type, ID, file_remove_cycles, file_assumption_1, O = cff.create_from_file(filename)
+                    C = graph_creation.create_cluster_graph(O, appeal)
+                    B = graph_creation.create_bipartite_from_cluster(C)
+                    for node in B.nodes():
+                        if B.nodes[node]['bipartite'] == 0:
+                            if B.nodes[node]['weight'] not in cluster_sizes.keys():
+                                print("ENCOUNTERED A WEIGHT NOT IN DICTIONARY")
+                                sys.exit()
+                            cluster_sizes[B.nodes[node]['weight']] = cluster_sizes[B.nodes[node]['weight']] + 1
+                    print("Finished Count for " + filename)
+                    save_cluster_size_data("5000", graph, appeal, filename, cluster_sizes)
+                    B.clear()
+                    C.clear()
+                    O.clear()
+
+def reset_dict_from_list_keys(lines):
+    cluster_sizes = dict()
+    for line in lines:
+        if line != '':
+            cluster_sizes[int(line)] = 0
+    return cluster_sizes  
+
+def save_cluster_size_data(num_nodes, graph_type, appeal, filename, cluster_sizes):
+    print("Svaing Data")
+    wb = openpyxl.load_workbook(FILE_DIRECTORY_PREFIX + 'Cluster_Data.xlsx')
+    sheets = wb.sheetnames
+    cluster_size_data = wb[sheets[0]]
+    counts = [value for key, value in cluster_sizes.items()]
+    cluster_size_data.append([num_nodes] + [appeal] + [graph_type] + [filename] + counts)
+    wb.save(FILE_DIRECTORY_PREFIX + 'Cluster_Data.xlsx')
+
+def write_header(lines):
+    print("Write Header")
+    wb = openpyxl.load_workbook(FILE_DIRECTORY_PREFIX + 'Cluster_Data.xlsx')
+    sheets = wb.sheetnames
+    cluster_size_data = wb[sheets[0]]
+    cluster_size_data.append(["Num Nodes","Appeal","Graph Type","Location"] + lines)
+    wb.save(FILE_DIRECTORY_PREFIX + 'Cluster_Data.xlsx')
+
+def histogram_data_collection(node_sizes, runs, appeals):
+    get_all_possible_cluster_sizes(node_sizes, runs, appeals)
+    record_occurences_of_cluster_sizes(node_sizes, runs, appeals)
 
 def main():
     node_sizes = [500, 1000, 2000, 5000] # ["500", "1000", "2000", "5000"] | ["150", "500", "1000", "2000"]
     k_vals = ["10","20","50","100"] # ["5","10","20","50"]
-    appeals = ["0.5","0.25","0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
+    appeals = ["0.75"] # ["0.5", "0.5", "0.5", "0.5"]
     runs = 25
 
     m = 2
@@ -86,9 +155,23 @@ def main():
     #     do_gen = input("Do you want to generate new files? Enter [Y] or [N]: ")
     #     if do_gen == "Y":
     #         generate_and_save_graphs(node_sizes, runs, m=2,p=0.2)
+
     test_dif_combos(node_sizes, runs, k_vals, appeals)
 
+    # histogram_data_collection([5000], runs, appeals)
+
 main()
+
+
+
+
+
+
+
+
+
+
+
 # get_cluster_data()
 # driver.test_file("1", "5", "0.5")
 
