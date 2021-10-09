@@ -241,7 +241,7 @@ Come up with an experiment design based on papers that we've read, then see how 
 #     general_graph.clear()
 #     O.clear()
 
-def test_file(original_graph_filename, k, appeal, plot_graphs="False", do_debug="False"):
+def test_file(original_graph_filename, k, appeal, record_cluster_data=False, plot_graphs="False", do_debug="False"):
     print("=============================================")
     print("Running on " + original_graph_filename + ". k = " + k + ". a = " + appeal)
     # convert command line args to proper types
@@ -266,7 +266,7 @@ def test_file(original_graph_filename, k, appeal, plot_graphs="False", do_debug=
     #     do_forward = True
 
     # create cluster and bipartite based on information from file
-    tree_case_cluster, tree_case_bipartite, assumption_one_cluster, assumption_one_bipartite, general_bipartite, loops_through_while = graph_creation.generate_test_graphs(O, appeal)
+    tree_case_cluster, tree_case_bipartite, assumption_one_cluster, assumption_one_bipartite, general_bipartite, loops_through_while, cluster_occurences = graph_creation.generate_test_graphs(O, appeal, record_cluster_data)
     if loops_through_while != 1:
         print("Criticalities were reset. Assumption 1 may not have been satisfied in this file")
         sys.exit()
@@ -287,7 +287,9 @@ def test_file(original_graph_filename, k, appeal, plot_graphs="False", do_debug=
     max_height = "-"
     if O.number_of_nodes() < 1000:
         max_degree, max_height = get_max_degree_and_height(tree_case_cluster)
-        
+
+    # if record_cluster_data:
+        #view.record_clusters(num_nodes, k, appeal, graph_type, location, cluster_occurences)
     # save to excel. Also provides unique ID for each row to a test can be ran again
     view.write_results_to_excel([num_nodes, k, appeal, graph_type, location], payoffs, relative_results, max_degree, max_height, seeds[8])
     
@@ -492,16 +494,16 @@ def general_tests(bipartite, payoffs, seeds, runtimes, k, debug, do_recursive_DP
     if save_seeds: seeds[6] = bipartite_greedy_seeds
     if debug: print("Bipartite Greedy payoff: ", payoff_greedy)
 
-    # if do_forward:
-    #     # run bipartite forward thinking algorithm
-    #     start = timeit.default_timer()
-    #     # payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy(bipartite, k, debug)
-    #     payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy_graph_implementation(bipartite, k)
-    #     stop = timeit.default_timer()
-    #     runtimes[7] = stop - start
-    #     payoffs[7] = payoff_forward_thinking
-    #     if save_seeds: seeds[7] = forward_seeds
-    #     if debug: print("Forward-Thinking payoff: ", payoff_forward_thinking)
+    if do_forward:
+        # run bipartite forward thinking algorithm
+        start = timeit.default_timer()
+        # payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy(bipartite, k, debug)
+        payoff_forward_thinking, forward_seeds = general_case.forward_thinking_greedy_graph_implementation(bipartite, k)
+        stop = timeit.default_timer()
+        runtimes[7] = stop - start
+        payoffs[7] = payoff_forward_thinking
+        if save_seeds: seeds[7] = forward_seeds
+        if debug: print("Forward-Thinking payoff: ", payoff_forward_thinking)
 
     # run bipartite linear program
     start = timeit.default_timer()

@@ -162,10 +162,10 @@ def generate_ID():
     # return number that was recorded in file before updated
     return ID
 
-def record_clusters(num_nodes, k, appeal, graph_type, location, cluster_occurences):
-    print('\nNext Test:\n')
-    filename = FILE_DIRECTORY_PREFIX + "cluster_data/" + location[10:]
-    for key,val in cluster_occurences.
+# def record_clusters(num_nodes, k, appeal, graph_type, location, cluster_occurences):
+#     print('\nNext Test:\n')
+#     filename = FILE_DIRECTORY_PREFIX + "cluster_data/" + location[10:]
+#     for key,val in cluster_occurences.
 
 """ Write results to an excel sheet stored in the currently_in_use/tests folder """
 def write_results_to_excel(preamble, payoffs, relative_results, max_degree, max_height, opt_seeds):

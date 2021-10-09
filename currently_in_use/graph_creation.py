@@ -86,7 +86,7 @@ def generate_test_graphs(O, threshold, record_cluster_data=False):
     rejectingNodeDict.clear()
     B.clear()
     C.clear()
-    return C_remove_cyc, B_remove_cyc, C_sat_assume_one, B_sat_assume_one, unmodified_B, count
+    return C_remove_cyc, B_remove_cyc, C_sat_assume_one, B_sat_assume_one, unmodified_B, count, cluster_occurences
 
 """
 From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled

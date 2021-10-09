@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import re
+import random
 
 '''
 The goal of this class is to create a graph from a file. It is written to accomodate
@@ -93,6 +94,7 @@ CLUSTER = 'c' # identify file as cluster graph format
 ORIGINAL = 'o' # identify file as originial graph format
 # use "currently_in_use/" if in Overexposue folder, "" if in currently_in_use already (personal war im fighting with the vs code debugger)
 FILE_DIRECTORY_PREFIX = "currently_in_use/"#currently_in_use/
+FACEBOOK_DATA_SET = "test_files/facebook_combined.txt"
 
 global G
 G = nx.Graph()
@@ -109,6 +111,8 @@ Takes a file and has different returns based on input
     G --> a graph
 '''
 def create_from_file(filename):
+    if filename == FACEBOOK_DATA_SET:
+        return None, None, "FB", None, None, None, create_facebook_graph(filename)
     file = open(FILE_DIRECTORY_PREFIX + filename,"r")
     if file.mode == 'r':
         contents = file.read()
@@ -204,6 +208,26 @@ def create_edge(attrib_info):
             G.edges[edge]['rej_nodes'] = temp
         elif i > 3: # add to reject set if more than one reject is present in an edge
             G.edges[edge]['rej_nodes'].add(int(attrib_info[i]))
+
+def create_facebook_graph(filename):
+    file = open(FILE_DIRECTORY_PREFIX + filename,"r")
+    if file.mode == 'r':
+        contents = file.read()
+    lines = re.split("\n", contents)
+    file.close()
+
+    for line in lines:
+        nums = re.split(" ", line)
+        nums[0] = int(nums[0])
+        nums[1] = int(nums[1])
+        for num in nums:
+            if not G.has_node(num):
+                G.add_node(num)
+                G.nodes[num]['criticality'] = random.uniform(0, 1)
+                G.nodes[num]['visited'] = False
+                G.nodes[num]['cluster'] = -1
+        G.add_edge(nums[0],nums[1])
+    return G
 
 # def main():
 #     crit, T = create_from_file(FILE_DIRECTORY_PREFIX + "testing_files/er0.txt")

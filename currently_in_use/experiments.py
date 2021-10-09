@@ -142,11 +142,18 @@ def histogram_data_collection(node_sizes, runs, appeals):
     get_all_possible_cluster_sizes(node_sizes, runs, appeals)
     record_occurences_of_cluster_sizes(node_sizes, runs, appeals)
 
+def test_facebook(runs, k_vals, appeals):
+    for appeal in appeals:
+        for k in k_vals:
+            for i in range(runs):
+                filename = "facebook_combined.txt"
+                driver.test_file(filename, k, appeal)
+
 def main():
     node_sizes = [5000] # ["500", "1000", "2000", "5000"] | ["150", "500", "1000", "2000"]
     node_offset = [3]
-    k_vals = ["30","40","60","70","80","90"] #"10","20","50","100"] # ["5","10","20","50"]
-    appeals = ["0.25", "0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
+    k_vals = ["100"] #["30","40","60","70","80","90"] #"10","20","50","100"] # ["5","10","20","50"]
+    appeals = ["0.5"]#["0.25", "0.5", "0.75"] # ["0.5", "0.5", "0.5", "0.5"]
     runs = 25
 
     m = 2
@@ -157,7 +164,8 @@ def main():
     #     if do_gen == "Y":
     #         generate_and_save_graphs(node_sizes, runs, m=2,p=0.2)
 
-    test_dif_combos(node_sizes, node_offset, runs, k_vals, appeals)
+    test_facebook(runs, k_vals, appeals)
+    # test_dif_combos(node_sizes, node_offset, runs, k_vals, appeals)
 
     # histogram_data_collection([5000], runs, appeals)
 
