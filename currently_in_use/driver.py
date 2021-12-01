@@ -241,7 +241,7 @@ Come up with an experiment design based on papers that we've read, then see how 
 #     general_graph.clear()
 #     O.clear()
 
-def test_file(original_graph_filename, k, appeal, record_cluster_data=False, plot_graphs="False", do_debug="False"):
+def test_file(original_graph_filename, k, appeal, record_cluster_data="False", plot_graphs="False", do_debug="False"):
     print("=============================================")
     print("Running on " + original_graph_filename + ". k = " + k + ". a = " + appeal)
     # convert command line args to proper types
@@ -249,6 +249,7 @@ def test_file(original_graph_filename, k, appeal, record_cluster_data=False, plo
        original_graph_filename = original_graph_filename + ".txt"
     plot_graphs = string_to_boolean(plot_graphs)
     debug = string_to_boolean(do_debug)
+    record_cluster_data = string_to_boolean(record_cluster_data)
     k = int(k)
     appeal = float(appeal)
     location = FILE_LOCATION_PREFIX + original_graph_filename
@@ -614,7 +615,7 @@ def get_max_degree_and_height(G):
 # retest_old_file("0.5/BA/500/10/73.txt", "False","False","False")
 
 # test_file("BA/5000/298.txt", "10", "0.5")
-# test_file("BA/1000/100.txt", "10", "0.5")
+test_file("BA/500/1.txt", "10", "0.3", "True")
 # plt.show()
 
 # '''
