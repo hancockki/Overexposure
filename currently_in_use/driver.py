@@ -267,10 +267,20 @@ def test_file(original_graph_filename, k, appeal, record_cluster_data="False", p
     #     do_forward = True
 
     # create cluster and bipartite based on information from file
-    tree_case_cluster, tree_case_bipartite, assumption_one_cluster, assumption_one_bipartite, general_bipartite, loops_through_while, cluster_occurences = graph_creation.generate_test_graphs(O, appeal, record_cluster_data)
+    tree_case_cluster, tree_case_bipartite, assumption_one_cluster, assumption_one_bipartite, general_bipartite, loops_through_while = graph_creation.generate_test_graphs(O, appeal, record_cluster_data)
     if loops_through_while != 1:
         print("Criticalities were reset. Assumption 1 may not have been satisfied in this file")
         sys.exit()
+
+    # if cluster data is being recorded, do not run tests on graphs
+    if record_cluster_data:
+        tree_case_cluster.clear()
+        tree_case_bipartite.clear()
+        assumption_one_cluster.clear()
+        assumption_one_bipartite.clear()
+        general_bipartite.clear()
+        O.clear() 
+        return
     
     # run tests and calculate payoffs
     relative_results, seeds = run_tests_on_graph(tree_case_cluster, tree_case_bipartite, assumption_one_cluster, assumption_one_bipartite, general_bipartite, k, debug, do_recursive_DP, do_forward)
@@ -615,7 +625,7 @@ def get_max_degree_and_height(G):
 # retest_old_file("0.5/BA/500/10/73.txt", "False","False","False")
 
 # test_file("BA/5000/298.txt", "10", "0.5")
-test_file("BA/500/1.txt", "10", "0.3", "True")
+# test_file("ER/5000/233.txt", "100", "0.25", "True")
 # plt.show()
 
 # '''

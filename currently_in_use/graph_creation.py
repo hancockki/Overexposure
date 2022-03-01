@@ -50,6 +50,9 @@ global DEBUG
 rejectingNodeDict = {}
 DEBUG = False
 
+RECORD_FILENAME = "all_cluster_data.txt"
+FILE_DIRECTORY_PREFIX = "currently_in_use/"#"currently_in_use/"
+
 MAX_ATTEMPTS_SASISFY_ASS_1 = 100
 
 #method to test whether our input graph is correctly forming clusters, then runs dynamic programming
@@ -60,7 +63,7 @@ def generate_test_graphs(O, threshold, record_cluster_data=False):
     do_while = True
     while do_while:
         count += 1
-        C, cluster_occurences = create_cluster_graph(O, threshold, record_cluster_data)
+        C = create_cluster_graph(O, threshold, record_cluster_data)
         # C will be false if there are less than two nodes in the cluster graph. In this case attempt a new assignment of variables
         if C == False:
             reset_original_graph_data(O)
@@ -86,7 +89,7 @@ def generate_test_graphs(O, threshold, record_cluster_data=False):
     rejectingNodeDict.clear()
     B.clear()
     C.clear()
-    return C_remove_cyc, B_remove_cyc, C_sat_assume_one, B_sat_assume_one, unmodified_B, count, cluster_occurences
+    return C_remove_cyc, B_remove_cyc, C_sat_assume_one, B_sat_assume_one, unmodified_B, count
 
 """
 From each node in the nodeList, try to label its cluster. This will return 0 for many nodes, as they are labeled
@@ -94,7 +97,6 @@ from the (arbitrary) canonical node in its cluster.
 We then select a seed set of up to (not always, depending on the composition of the graph) k source nodes.
 """
 def create_cluster_graph(O, threshold, record_cluster_data):
-    cluster_occurences = dict()
     nodeList = O.nodes()
     clusterCount = 0
     G_cluster = nx.Graph()
@@ -103,10 +105,10 @@ def create_cluster_graph(O, threshold, record_cluster_data):
     for node_ID in nodeList:
         if (O.nodes[node_ID]['criticality'] < threshold) and (O.nodes[node_ID]['cluster'] == -1):
             accepting_in_cluster, rejecting_in_cluster = label_cluster(O, node_ID, clusterCount, threshold)
-            if record_cluster_data and accepting_in_cluster in cluster_occurences:
-                cluster_occurences[accepting_in_cluster] = cluster_occurences[accepting_in_cluster] + 1
-            elif record_cluster_data:
-                cluster_occurences[accepting_in_cluster] = 1
+            if record_cluster_data:
+                with open(FILE_DIRECTORY_PREFIX + RECORD_FILENAME, 'a') as graph_info:
+                    graph_info.write(str(accepting_in_cluster) + '\n')
+                    graph_info.close()
             make_cluster_node(G_cluster, clusterCount, accepting_in_cluster)
             clusterCount += 1
     # # cannot have a cluster graph with no edges... ? (wq:try to understand this later)
@@ -126,7 +128,7 @@ def create_cluster_graph(O, threshold, record_cluster_data):
         #if DEBUG: print("Subtracting", len(rejNodes_copy), "cluster", clusterNum )
         G_cluster.nodes[clusterNum]['weight'] -= len(rejNodes_copy)
     make_cluster_edge(G_cluster, O)
-    return G_cluster, cluster_occurences
+    return G_cluster
 
 """
 Perform BFS to label a cluster. Note how we called setVisitedFalse(O) upon finding an unvisited node.
